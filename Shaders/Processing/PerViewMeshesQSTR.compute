@@ -1,0 +1,653 @@
+﻿/// Copyright 2019-2020 MINES ParisTech (PSL University)
+/// This work is licensed under the terms of the MIT license, see the LICENSE file.
+/// 
+/// Author: Grégoire Dupont de Dinechin, gregoire@dinechin.org
+
+
+
+/// <summary> 
+/// Converts a depth map into a mesh using (1) quadtree-based simplification and (2) triangle removal at sharp depth edges.
+///
+/// The quadtree-based simplification is inspired by an algorithm presented in:
+/// Lee et al., Bimodal Vertex Splitting: Acceleration of Quadtree Triangulation for Terrain Rendering, 2014, https://doi.org/10.1587/transinf.E97.D.1624.
+///
+/// The triangle removal at disocclusion edges is inspired by an algorithm presented in:
+/// Pajarola et al., DMesh: Fast Depth-Image Meshing and Warping, 2004, https://doi.org/10.1142/S0219467804001580.
+/// </summary>
+
+/// HEADER
+    #include "./../CGIncludes/CoreCG.cginc"
+    #include "./../CGIncludes/CameraCG.cginc"
+    #include "./../CGIncludes/ColorCG.cginc"
+    #pragma kernel ComputeQuadtreeValues
+    #pragma kernel ComputeBlockSplits
+/// ENDHEADER
+
+/// PROPERTIES
+    float _TriangleErrorThreshold;
+    int _MeshProjectionType;
+    int _DisocclusionHandlingType;
+    int _RemoveBackground;
+    float _OrthogonalityParameter;
+    float _TriangleSizeParameter;
+
+    #define PROJECT_MESH_3D (_MeshProjectionType == 1)
+    #define REMOVE_RUBBER_SHEET_TRIANGLES (_DisocclusionHandlingType == 1)
+    #define REMOVE_BACKGROUND_TRIANGLES (_RemoveBackground == 1)
+
+    uint _EquivalentPowerofTwoResolution;
+    uint _CurrentLOD;
+    sampler2D _DistanceMap;
+    uint2 _PixelResolution;
+    float2 _FieldOfView;
+    float2 _DistanceRange;
+    RWStructuredBuffer<float4> _QuadtreeBuffer;
+    RWStructuredBuffer<float3> _ViewXYZBuffer;
+    RWStructuredBuffer<float3> _VertexBuffer;
+    RWStructuredBuffer<float2> _UVBuffer;
+    AppendStructuredBuffer<float3> _TriangleAppendBuffer;
+    RWStructuredBuffer<float> _AccumulatedErrorBuffer;
+/// ENDPROPERTIES
+
+/// IDMETHODS
+
+    /// <summary> 
+    /// Returns the maximum possible ID value for a block, given the current level of detail.
+    /// </summary>
+    uint2 GetMaxBlockID(uint lod)
+    {
+        return _PixelResolution / exp2(lod);
+    }
+
+    /// <summary> 
+    /// Checks whether a block's ID is valid, given the current level of detail.
+    /// Because thread groups have a fixed size (8), there will be more threads dispatched than needed.
+    /// The necessity of a thread / block is thus checked, based on its ID's validity. Unnecessary threads are set aside.
+    /// </summary>
+    bool IsBlockIDValid(int2 blockID, uint lod)
+    {
+        int2 maxBlockID = GetMaxBlockID(lod);
+        return (blockID.x >= 0 && blockID.y >= 0 && blockID.x < maxBlockID.x && blockID.y < maxBlockID.y);
+    }
+
+/// ENDIDMETHODS
+
+/// INDEXMETHODS
+
+    /// <summary> 
+    /// Returns the base index in the block buffer for the given level of detail.
+    /// All block indices for this level of detail will be equal to or higher than this index.
+    /// </summary>
+    uint GetBaseBlockBufferIndex(uint lod)
+    {
+        return (1.0 - 1.0 / pow(4, lod)) * (4 * _EquivalentPowerofTwoResolution * _EquivalentPowerofTwoResolution) / 3.0;
+    }
+
+    /// <summary> 
+    /// Returns a block's index in the block buffer given the block's ID and level of detail.
+    /// </summary>
+    uint GetBlockBufferIndex(uint2 blockID, uint lod)
+    {
+        return EncodeIDToIndex(blockID, GetBaseBlockBufferIndex(lod), GetMaxBlockID(lod));
+    }
+
+    /// <summary> 
+    /// Return's a node point's index in the viewXYZ buffer.
+    /// The node grid corresponds to the corners and centers of each pixel in the depth map (enlarged to a power-of-two resolution).
+    /// </summary>
+    uint GetViewXYZBufferIndex(uint2 nodeGridXY)
+    {
+        return EncodeIDToIndex(nodeGridXY, 0, (2 * _EquivalentPowerofTwoResolution + 1));
+    }
+
+    /// <summary> 
+    /// Return a node point's index in the vertex buffer.
+    /// </summary>
+    uint GetVertexBufferIndex(uint2 nodeGridXY)
+    {
+        uint2 halfNodeGridXY = floor(0.5 * nodeGridXY);
+        uint2 nodeEvenGridXY = 2 * halfNodeGridXY;
+        if(nodeEvenGridXY.x == nodeGridXY.x)
+            return EncodeIDToIndex(halfNodeGridXY, 0, _EquivalentPowerofTwoResolution + 1);
+        return EncodeIDToIndex(halfNodeGridXY, pow(_EquivalentPowerofTwoResolution + 1, 2), _EquivalentPowerofTwoResolution);
+    }
+
+    /// <summary> 
+    /// Returns the index for the triangle buffer.
+    /// (Only for information purposes, not actually used).
+    /// </summary>
+    uint GetTriangleBufferIndex(uint2 childID, uint blockBufferIndex)
+    {
+        return EncodeIDToIndex(childID, 4 * blockBufferIndex, 2);
+    }
+
+/// ENDINDEXMETHODS
+
+/// CHILDMETHODS
+
+    /// <summary> 
+    /// Returns a child block's ID given the parent block's ID and the child's ID in its relationship with its parent.
+    /// Each parent block contains 4 children blocks, dividing the parent block into quadrants. Child IDs are as follows:
+    /// o--------o--------o
+    /// | (0, 1) | (1, 1) |  
+    /// o--------o--------o
+    /// | (0, 0) | (1, 0) |  
+    /// o--------o--------o
+    /// The child's ID (in its relationship with its parent) is different from the child's block ID (as a block in the array of blocks for the current level of detail).
+    /// </summary>
+    uint2 GetChildBlockID(uint2 blockID, uint2 childID)
+    {
+        return 2 * blockID + childID;
+    }
+
+    /// <summary> 
+    /// Returns a child block's index in the block buffer, given the parent block's ID, the parent level of detail, and the parent-child relationship ID.
+    /// </summary>
+    uint GetChildBlockBufferIndex(uint2 blockID, uint2 childID, uint lod)
+    {
+        return GetBlockBufferIndex(GetChildBlockID(blockID, childID), lod - 1.0); 
+    }
+
+/// ENDCHILDMETHODS
+
+/// ERRORMETHODS
+
+    /// <summary> 
+    /// Returns an error value for a given edge, based on a metric corresponding to vertex removal.
+    /// We consider three vertices such that one is located halfway between the two others in the XY dimensions : left, center, right.
+    /// Each vertice may have a different Z value, however. Thus, the question is: can we remove the center vertex to create an edge between left and right?
+    /// The error metric is the view-space distance between (1) the center vertex and (2) the center of the edge that would connect left and right.
+    /// </summary>
+    float GetErrorValue(float3 nodesViewXYZ[9], uint index0, uint index1)
+    {
+        return length( (nodesViewXYZ[index0] + nodesViewXYZ[index1]) / 2.0 - nodesViewXYZ[(index0 + index1) / 2] );
+    }
+
+    /// <summary> 
+    /// Checks whether a block's error is below the acceptable threshold.
+    /// This depends on the mean distance of the block: far-away blocks may be made more coarse than blocks closer to the camera.
+    /// Blocks below the error threshold will be transformed into two triangles (at least initially: more triangles may be created depending on neighboring blocks' error, so as to prevent the creation of cracks).  
+    /// </summary>
+    bool CheckBelowErrorThreshold(float blockError, float blockMeanDistance)
+    {
+        return (blockError < _TriangleErrorThreshold * blockMeanDistance);
+    }
+
+/// ENDERRORMETHODS
+
+/// VIEWSPACEMETHODS
+
+    /// <summary> 
+    /// Returns the texture UV for a given node point.
+    /// </summary>
+    float2 GetUVAtNodeGridXY(uint2 nodeGridXY)
+    {
+        return (nodeGridXY * 0.5 / _PixelResolution);
+    }
+
+    /// <summary> 
+    /// Returns the XYZ position in view space for a given texture UV.
+    /// </summary>
+    float3 GetViewXYZAtUV(float2 texUV)
+    {
+        float4 distanceColorEncoded = tex2Dlod(_DistanceMap, float4(texUV, 0, 0));
+        float distance01NonLinear = Decode01FromPreciseColor(distanceColorEncoded);
+        float distance = DecodeClampedValueFrom01NonLinear(distance01NonLinear, _DistanceRange);
+        return GetViewXYZ(distance, false, texUV, _FieldOfView);
+    }
+
+    /// <summary> 
+    /// Returns the average XYZ position in view space of the pixels surrounding the given node point.
+    /// </summary>
+    float3 GetViewXYZFromSurroundingPixels(uint2 nodeGridXY)
+    {
+        float3 viewXYZ = 0;
+        uint count = 0;
+        for(int i = -1; i < 2; i += 2)
+        {
+            for(int j = -1; j < 2; j += 2)
+            {
+                float2 texUV = GetUVAtNodeGridXY(nodeGridXY + int2(i, j));
+                if(CheckUVBounds(texUV))
+                {
+                    viewXYZ += GetViewXYZAtUV(texUV);
+                    count++;
+                }
+            }
+        }
+        if(count > 0)
+            viewXYZ /= count;
+        return viewXYZ;
+    }
+
+    /// <summary> 
+    /// Returns the XYZ position in view space for a given node point.
+    /// If this position had already been calculated and stored in the ViewXYZ buffer, simply returns its value.
+    /// Otherwise, calculates it as a blend of the XYZ positions corresponding to neighboring pixels in the depth map.
+    /// o-----------o-----------o
+    /// | NW pixel  |  NE pixel |           The node point can be at either of the [P__] positions in the diagram.
+    /// |         [P01]  [P11]  |           To calculate the XYZ position of the node point:
+    /// |           |           |               - [P00]: average viewXYZ of surrounding pixels.
+    /// o---------[P00]--[P10]--o               - [P11]: viewXYZ from value of the pixel.
+    /// |           |           |               - [P10]: average of viewXYZ from [P00] and the node to the right of [P10].
+    /// |           |           |               - [P01]: average of viewXYZ from [P00] and the node above [P01].
+    /// | SW pixel  |  SE pixel |
+    /// o-----------o-----------o
+    /// </summary>
+    float3 GetViewXYZAtNodeGridXY(uint2 nodeGridXY)
+    {
+        uint viewXYZBufferIndex = GetViewXYZBufferIndex(nodeGridXY);
+        float3 viewXYZ = 0;
+        if(_CurrentLOD == 0)
+        {
+            uint2 halfNodeGridXY = floor(0.5 * nodeGridXY);
+            uint2 nodeEvenGridXY = 2 * halfNodeGridXY;
+            // [P11]
+            if(nodeGridXY.x != nodeEvenGridXY.x && nodeGridXY.y != nodeEvenGridXY.y)
+            {
+                viewXYZ = GetViewXYZAtUV(GetUVAtNodeGridXY(nodeGridXY));
+            }
+            else
+            {
+                float3 nodeEvenViewXYZ = GetViewXYZFromSurroundingPixels(nodeEvenGridXY);
+                // [P00]
+                if(nodeGridXY.x == nodeEvenGridXY.x && nodeGridXY.y == nodeEvenGridXY.y)
+                {
+                    viewXYZ = nodeEvenViewXYZ;
+                }
+                // [P10] and [P01]
+                else
+                {
+                    uint2 otherNodeDiffXY = (nodeGridXY.x != nodeEvenGridXY.x) ? uint2(2, 0) : uint2(0, 2);
+                    float3 otherViewXYZ = GetViewXYZFromSurroundingPixels(nodeEvenGridXY + otherNodeDiffXY);
+                    viewXYZ = (nodeEvenViewXYZ + otherViewXYZ) / 2.0;
+                }
+            }
+            _ViewXYZBuffer[viewXYZBufferIndex] = viewXYZ;
+        }
+        else
+        {
+            viewXYZ = _ViewXYZBuffer[viewXYZBufferIndex];
+        }
+        return viewXYZ;
+    }
+
+    /// <summary> 
+    /// Returns a position in the node grid, given a block ID and a node ID.
+    /// Each block contains 9 nodes, at its center, corners, and edge centers.
+    /// Node IDs are as follows:           Node indices are as follows:
+    /// (0,2) -- (1,2) -- (2,2)            [6] -- [7] -- [8]
+    ///   |        |        |               |      |      |
+    ///   |        |        |               |      |      |
+    /// (0,1) -- (1,1) -- (2,1)            [3] -- [4] -- [5]
+    ///   |        |        |               |      |      |
+    ///   |        |        |               |      |      |
+    /// (0,0) -- (1,0) -- (2,0)            [0] -- [1] -- [2]
+    /// </summary>
+    uint2 GetNodeGridXY(uint2 blockID, uint2 nodeID)
+    {
+        return exp2(_CurrentLOD) * (2 * blockID + nodeID);
+    }
+
+/// ENDVIEWSPACEMETHODS
+
+/// RUBBERSHEETMETHODS
+
+    /// <summary> 
+    /// Checks whether a given triangle would create a "rubber sheet" at a disocclusion edge.
+    /// If this is the case, one may want to remove the triangle, as it likely connects two objects which should not be connected.   
+    /// </summary>
+    bool IsTriangleRubberSheet(float3 vertex0, float3 vertex1, float3 vertex2)
+    {
+        if(!REMOVE_RUBBER_SHEET_TRIANGLES)
+            return false;
+        float3 triangleCenter = (vertex0 + vertex1 + vertex2) / 3.0;
+        float3 triangleNormal = normalize(cross(vertex2 - vertex0, vertex1 - vertex0));
+        float3 normalizedFrameCamToTriangle = normalize(triangleCenter - 0);
+        bool orthogonalityCheck = abs(dot(triangleNormal, normalizedFrameCamToTriangle)) < _OrthogonalityParameter;
+        if(orthogonalityCheck)
+        {
+            float triangleDistance = length(triangleCenter);
+            float deltaTriangleDistance = max(max(length(vertex0 - vertex1), length(vertex0 - vertex2)), length(vertex1 - vertex2));
+            bool largeTrianglesCheck = (deltaTriangleDistance > _TriangleSizeParameter * triangleDistance);
+            if(largeTrianglesCheck)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /// <summary> 
+    /// Checks whether a block's child triangles produce "rubber sheets", based on the block's node positions.
+    /// Child triangles are what will ultimately be created, if the block has low enough error to be written.
+    /// There are four child triangles per block, and they are indexed and identified similarly to child blocks.
+    /// The child triangles are arranged as follows:        The IDs of these child triangles are as follows:
+    ///  6------7------8                                    o-------o-------o  
+    ///  |  \  [N]  /  |                                    |  \ ( 0, 1) /  |
+    ///  |    \   /    |                                    |     \   /     |
+    ///  3 [W]  4  [E] 5                                    o( 1, 0)o( 1, 1)o
+    ///  |    /   \    |                                    |     /   \     |
+    ///  |  /  [S]  \  |                                    |  / ( 0, 0) \  |
+    ///  0------1------2                                    o-------o-------o
+    /// </summary>
+    bool CheckChildTrianglesForRubberSheet(float3 nodesViewXYZ[9])
+    {
+        bool south = IsTriangleRubberSheet(nodesViewXYZ[4], nodesViewXYZ[0], nodesViewXYZ[2]);
+        bool east = IsTriangleRubberSheet(nodesViewXYZ[4], nodesViewXYZ[2], nodesViewXYZ[8]);
+        bool north = IsTriangleRubberSheet(nodesViewXYZ[4], nodesViewXYZ[8], nodesViewXYZ[6]);
+        bool west = IsTriangleRubberSheet(nodesViewXYZ[4], nodesViewXYZ[6], nodesViewXYZ[0]);
+        return (south || east || north || west);
+    }
+
+/// ENDRUBBERSHEETMETHODS
+
+/// OUTPUTMETHODS
+
+    /// <summary> 
+    /// Computes the quadtree buffer's values for the given block.
+    /// The quadtree buffer contains four values for each block:
+    ///     - x: Whether the block's error is below threshold (=1 if true, =0 otherwise).
+    ///     - y: Whether the block contains rubber sheet triangles (=1 if true, =0 otherwise).
+    ///     - z: The block's error value (float).
+    ///     - w: The block's mean distance (float).
+    /// </summary>
+    void ComputeBlockQuadtreeValues(uint2 blockID)
+    {
+        float blockError = 0.0;
+        float blockMeanDistance = 0.0;
+        uint blockContainsRubberSheetTriangles = 0;
+        bool blockBelowThreshold;
+        float3 nodesViewXYZ[9];
+        // For the 9 nodes of the block, store the nodes' view-space positions.
+        uint i; uint j;
+        for(j = 0; j < 3; j++)
+        {
+            for(i = 0; i < 3; i++)
+            {
+                uint2 nodeID = uint2(i, j);
+                uint index = EncodeIDToIndex(nodeID, 0, 3);
+                uint2 nodeGridXY = GetNodeGridXY(blockID, nodeID);
+                nodesViewXYZ[index] = GetViewXYZAtNodeGridXY(nodeGridXY);
+            }
+        }
+        // Using the nodes' view-space positions, compute the block's error value, as the maximum of the errors of its edges (boundaries and diagonals).
+        // This value will later be updated to be the maximum of this value and the errors of the children blocks.
+        blockError = max(blockError, GetErrorValue(nodesViewXYZ, 0, 2));
+        blockError = max(blockError, GetErrorValue(nodesViewXYZ, 0, 6));
+        blockError = max(blockError, GetErrorValue(nodesViewXYZ, 2, 8));
+        blockError = max(blockError, GetErrorValue(nodesViewXYZ, 6, 8));
+        blockError = max(blockError, GetErrorValue(nodesViewXYZ, 0, 8));
+        blockError = max(blockError, GetErrorValue(nodesViewXYZ, 2, 6));
+        // Check whether this block's child triangles produce a "rubber sheet" effect.
+        // This will later be updated by also checking whether the child blocks contain "rubber sheet" triangles. 
+        blockContainsRubberSheetTriangles = (REMOVE_RUBBER_SHEET_TRIANGLES && CheckChildTrianglesForRubberSheet(nodesViewXYZ)) ? 1 : 0;
+        // If we are not at the finest level of detail:
+        // Compute the block's mean distance as the mean of its children's mean distances. 
+        // The block is considered below the error threshold only if it does not contain "rubber sheet" triangles, and has a low enough error value.
+        if(_CurrentLOD > 0)
+        {
+            for(j = 0; j < 2; j++)
+            {
+                for(i = 0; i < 2; i++)
+                {
+                    uint2 childID = uint2(i, j);
+                    uint childBlockBufferIndex = GetChildBlockBufferIndex(blockID, childID, _CurrentLOD);
+                    blockContainsRubberSheetTriangles = max(blockContainsRubberSheetTriangles, _QuadtreeBuffer[childBlockBufferIndex].y);
+                    blockError = max(blockError, _QuadtreeBuffer[childBlockBufferIndex].z);
+                    blockMeanDistance += _QuadtreeBuffer[childBlockBufferIndex].w / 4.0;
+                }
+            }
+            blockBelowThreshold = (blockContainsRubberSheetTriangles == 0) && CheckBelowErrorThreshold(blockError, blockMeanDistance);
+        }
+        // If we are at the finest level of detail:
+        // Compute the block's mean distance as the mean of its nodes' distances.
+        // At this level of detail, the block is necessarily considered as below the error threshold.
+        else
+        {
+            for(j = 0; j < 9; j++)
+            {
+                blockMeanDistance += length(nodesViewXYZ[j]) / 9.0;
+            }
+            blockBelowThreshold = true;
+        }
+        // Fill the quadtree buffer for this block.
+        uint blockBufferIndex = GetBlockBufferIndex(blockID, _CurrentLOD);
+        _QuadtreeBuffer[blockBufferIndex].x = blockBelowThreshold ? 1 : 0;
+        _QuadtreeBuffer[blockBufferIndex].y = blockContainsRubberSheetTriangles;
+        _QuadtreeBuffer[blockBufferIndex].z = blockError;
+        _QuadtreeBuffer[blockBufferIndex].w = blockMeanDistance;
+    }
+
+/// ENDOUTPUTMETHODS
+
+/// COMPUTE
+
+    /// <summary> 
+    /// Computes the quadtree buffer's values for a given block. The block's ID has to be valid.
+    /// This process will be called iteratively on the CPU in a fine-to-coarse way, i.e. starting with lod=0 blocks and going to lod=n blocks.
+    /// </summary>
+    [numthreads(8,8,1)]
+    void ComputeQuadtreeValues (uint2 blockID : SV_DispatchThreadID)
+    {
+        if(!IsBlockIDValid(blockID, _CurrentLOD))
+            return;
+        ComputeBlockQuadtreeValues(blockID);
+    }
+
+/// ENDCOMPUTE
+
+/// FILLBUFFERMETHODS
+
+    /// <summary> 
+    /// Specifies whether a triangle should be removed because it is part of the background, given whether either of its vertices belongs to the background.
+    /// </summary>
+    bool RemoveTriangleIfBackground(bool isBackground[3])
+    {
+        return (REMOVE_BACKGROUND_TRIANGLES && (isBackground[0] || isBackground[1] || isBackground[2]));
+    }
+
+    /// <summary> 
+    /// Returns a child triangle's direction, given the child triangle's ID.
+    /// The directions are as follows:
+    ///  o-------o-------o
+    ///  |  \ ( 0, 1) /  |
+    ///  |     \   /     |
+    ///  o(-1, 0)o( 1, 0)o
+    ///  |     /   \     |
+    ///  |  / ( 0,-1) \  |
+    ///  o-------o-------o
+    /// </summary>
+    int2 GetChildTriangleDirection(uint2 childID)
+    {
+        return (2 * childID.y - 1.0) * int2(childID.x, 1.0 - childID.x);
+    }
+
+    /// <summary> 
+    /// Writes values in the vertex and UV buffers, given a node point.
+    /// </summary>
+    void WriteVertexAndUV(uint2 nodeGridXY, out uint vertexBufferIndex, out float3 vertex, out bool isBackground)
+    {
+        vertex = GetViewXYZAtNodeGridXY(nodeGridXY);
+        isBackground = (abs(length(vertex) - _DistanceRange.y) < 0.1);
+        vertexBufferIndex = GetVertexBufferIndex(nodeGridXY);
+        float2 texUV = GetUVAtNodeGridXY(nodeGridXY);
+        _UVBuffer[vertexBufferIndex] = texUV;
+        if(PROJECT_MESH_3D)
+            _VertexBuffer[vertexBufferIndex] = vertex;
+        else
+            _VertexBuffer[vertexBufferIndex] = GetViewXYZ(1.25 * _DistanceRange.x, true, texUV, _FieldOfView);
+    }
+
+    /// <summary> 
+    /// Writes the specified child triangle.
+    /// To ensure that no cracks appear due to neighboring blocks having different levels of details, this process is done with a recursive check.
+    /// This recursion, which requires information on finer levels, is possible even though the process is coarse-to-fine, because we have already computed the quadtree buffer's values in a previous step.
+    /// </summary>
+    void WriteChildTriangleRecursive(uint2 blockID, uint2 childID)
+    {
+        // Determine the nodes corresponding to the given child triangle.
+        // Compute these nodes' IDs and view-space positions.
+        int2 childDirection = GetChildTriangleDirection(childID);
+        uint2 nodeIDs[3];
+        nodeIDs[0] = uint2(1, 1);
+        uint2 transformedDirection = uint2(-childDirection.y, childDirection.x);   
+        nodeIDs[1] = childDirection + 1 + transformedDirection;
+        nodeIDs[2] = childDirection + 1 - transformedDirection;
+        uint2 nodesGridXY[3];
+        for(uint j = 0; j < 3; j++)
+            nodesGridXY[j] = GetNodeGridXY(blockID, nodeIDs[j]);
+        // The node of ID (1,1) will be written in any case, independently of neighbor blocks' error levels.
+        float3 vertices[3];
+        bool isBackground[3];
+        uint vertexBufferIndices[3];
+        WriteVertexAndUV(nodesGridXY[0], vertexBufferIndices[0], vertices[0], isBackground[0]);
+        // Start recording triangle vertices. They will be written later to the triangle buffer.
+        uint triangleVertices[3];
+        triangleVertices[0] = vertexBufferIndices[0];
+        // Prepare a binary tree for the triangle.
+        // This binary tree will be used to recursively divide the original triangle into smaller, finer triangles until the neighbor block's level of detail is reached, thus preventing the creation of cracks.
+        uint bintreeMaxDepth = 6;
+        uint smallestLOD = max(0, _CurrentLOD + 1 - 1.0 * bintreeMaxDepth);
+        int2 bintreeChildBlockIDs[127];
+        bintreeChildBlockIDs[0] = blockID;
+        for(uint k = 1; k < 127; k++)
+            bintreeChildBlockIDs[k] = -1;
+        uint bintreeStartIndex = 0;
+        float2 edgeVector = nodesGridXY[2] - 1.0 * nodesGridXY[1];
+        // Loop over finer level of details, until either the finest LOD is reached or the loop is interrupted.
+        // The loop will be interrupted once the levels of detail of all neighbor blocks have been reached.
+        for(uint lod = _CurrentLOD; lod >= smallestLOD; lod--)
+        {
+            bool continueToNextBintreeLevel = false;
+            uint numberOfTriangles = exp2(_CurrentLOD - lod);
+            // Loop over each finer triangle.
+            for(uint j = 0; j < numberOfTriangles; j++)
+            {
+                uint bintreeIndex = bintreeStartIndex + j;
+                // If no coarser triangle has already been written on top of it, the finer triangle has to be studied.
+                // Otherwise, it means that a coarser triangle has already been written here: this finer-level triangle is not needed.
+                if(bintreeChildBlockIDs[bintreeIndex].x != -1)
+                {
+                    // Get the neighbor block's ID and index.
+                    int2 neighborBlockID = bintreeChildBlockIDs[bintreeIndex] + childDirection;
+                    uint neighborBlockBufferIndex = GetBlockBufferIndex(neighborBlockID, lod);
+                    // Check whether the finer triangle should be divided even further, or if it should be written.
+                    bool shouldDivideTriangle = (lod != smallestLOD) && IsBlockIDValid(neighborBlockID, lod) && (_QuadtreeBuffer[neighborBlockBufferIndex].x == 0);
+                    // If it should be divided even further, update the binary tree to indicate so.
+                    if(shouldDivideTriangle)
+                    {
+                        continueToNextBintreeLevel = true;
+                        uint nextBintreeIndex = bintreeStartIndex + numberOfTriangles + 2 * j;
+                        bintreeChildBlockIDs[nextBintreeIndex] = GetChildBlockID(bintreeChildBlockIDs[bintreeIndex], nodeIDs[1] / 2);
+                        bintreeChildBlockIDs[nextBintreeIndex + 1] = GetChildBlockID(bintreeChildBlockIDs[bintreeIndex], nodeIDs[2] / 2);
+                    }
+                    // Otherwise, write this finer triangle.
+                    else
+                    {
+                        // Compute and write both remaining vertices.
+                        for(uint i = 0; i < 2; i++)
+                        {
+                            uint2 nodeGridXY = nodesGridXY[1] + ((j + i) * 1.0 / numberOfTriangles) * edgeVector;
+                            WriteVertexAndUV(nodeGridXY, vertexBufferIndices[i + 1], vertices[i + 1], isBackground[i + 1]);
+                            triangleVertices[i + 1] = vertexBufferIndices[i + 1];
+                        }
+                        // Check if the triangle itself should be discarded because it is "rubber sheet" or background.
+                        // If not, write it the triangle buffer.
+                        if(!IsTriangleRubberSheet(vertices[0], vertices[1], vertices[2]) && !RemoveTriangleIfBackground(isBackground))
+                        {
+                            _TriangleAppendBuffer.Append(uint3(triangleVertices[0], triangleVertices[1], triangleVertices[2]));
+                        }
+                    }
+                }
+            }
+            // If all finer triangle were written, the recursion can stop here.
+            // Otherwise, at least one triangle needed to be divided further: the recursion continues.
+            if(!continueToNextBintreeLevel)
+                return;
+            bintreeStartIndex += numberOfTriangles;
+        }
+    }
+
+/// ENDFILLBUFFERMETHODS
+
+/// OTHERMETHODS
+
+    /// <summary> 
+    /// Disables the child block defined by the given index, by hijacking its quadtree buffer values.
+    /// Instead of having a regular indication of whether it is (=1) or isn't (=0) below the error threshold, the child block's value in the buffer is set to -1.
+    /// </summary>
+    void DisableChildBlock(uint childBlockBufferIndex)
+    {
+        if(_CurrentLOD > 0)
+        {
+            _QuadtreeBuffer[childBlockBufferIndex].x = -1;
+        }
+    }
+
+    /// <summary> 
+    /// Adds the error of the child block indicated by the given index to the buffer containing the accumulated error.
+    /// </summary>
+    void AddToAccumulatedError(uint childBlockBufferIndex)
+    {
+        if(_CurrentLOD > 0)
+        {
+            _AccumulatedErrorBuffer[childBlockBufferIndex] = _QuadtreeBuffer[childBlockBufferIndex].z;
+        }
+    }
+
+/// ENDOTHERMETHODS
+
+/// OUTPUTMETHODS
+
+    /// <summary> 
+    /// Processes the given block to see whether it should be written, and writes it if that is the case.
+    /// </summary>
+    void ProcessBlockForWriting(uint2 blockID)
+    {
+        uint blockBufferIndex = GetBlockBufferIndex(blockID, _CurrentLOD);
+        // Check whether the block has low enough error to be written.
+        bool shouldBlockAttemptWrite = (_QuadtreeBuffer[blockBufferIndex].x == 1);
+        // Check whether the block is disabled, in which case it should also disable its children blocks.
+        bool shouldBlockDisableChildren = (_QuadtreeBuffer[blockBufferIndex].x == -1);
+        // In any of these cases, do something. Otherwise, this block can be skipped.
+        if(shouldBlockAttemptWrite || shouldBlockDisableChildren)
+        {
+            // Loop over each child block (for disabling) / triangle (for writing).
+            for(uint j = 0; j < 2; j++)
+            {
+                for(uint i = 0; i < 2; i++)
+                {
+                    uint2 childID = uint2(i, j);
+                    uint childBlockBufferIndex = GetChildBlockBufferIndex(blockID, childID, _CurrentLOD);
+                    // The child triangle should be written only in the case where the containing block is to be written.
+                    if(shouldBlockAttemptWrite)
+                    {
+                        WriteChildTriangleRecursive(blockID, childID);
+                        AddToAccumulatedError(childBlockBufferIndex);
+                    }
+                    // The child block should be disabled in both cases.
+                    DisableChildBlock(childBlockBufferIndex);
+                }
+            }
+        }
+    }
+
+/// ENDOUTPUTMETHODS
+
+/// COMPUTE
+
+    /// <summary> 
+    /// Processes the given block (if valid) to determine whether it should be written, based on the quadtree buffer's values that were computed previously.
+    /// If the block should be written, writes the block, and disables its child blocks for further processing. Otherwise, the process does nothing more: it will be called later on the child blocks.
+    /// This process will be called iteratively on the CPU in a coarse-to-fine way, i.e. starting with lod=n blocks and going to lod=0 blocks.
+    /// </summary>
+    [numthreads(8,8,1)]
+    void ComputeBlockSplits (uint2 blockID : SV_DispatchThreadID)
+    {
+        if(!IsBlockIDValid(blockID, _CurrentLOD))
+            return;
+        ProcessBlockForWriting(blockID);
+    }
+
+/// ENDCOMPUTE

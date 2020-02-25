@@ -1,0 +1,60 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &-2984399413496049641
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c2223c1b8201c145a152b18f97e5ed3, type: 3}
+  m_Name: Blender 2.8 - Settings
+  m_EditorClassIdentifier: 
+  foldout: 1
+  exePath: C:\Program Files\Blender Foundation\Blender\blender.exe
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 85c2d105b227fdc4b84285540686658d, type: 3}
+  m_Name: COLIBRIVRSettings
+  m_EditorClassIdentifier: 
+  COLMAPSettings: {fileID: 4539181310757002247}
+  BlenderSettings: {fileID: -2984399413496049641}
+  InstantMeshesSettings: {fileID: 3640792841169846437}
+  previewMaxResolution: 256
+--- !u!114 &3640792841169846437
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da60e1f7e28ff6b46bf56e64c8e91e8e, type: 3}
+  m_Name: Instant Meshes - Settings
+  m_EditorClassIdentifier: 
+  foldout: 1
+  exePath: C:\Program Files\instant-meshes-windows\Instant Meshes.exe
+--- !u!114 &4539181310757002247
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c86941f8e655578469c5f59f6db04edd, type: 3}
+  m_Name: COLMAP 3.6 - Settings
+  m_EditorClassIdentifier: 
+  foldout: 1
+  exePath: C:\Program Files\COLMAP-dev-windows\COLMAP.bat

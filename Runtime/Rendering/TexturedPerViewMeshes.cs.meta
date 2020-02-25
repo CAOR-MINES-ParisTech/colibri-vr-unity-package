@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 1d62368d50883e34397466671cf6d221
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - blendingMaterial: {instanceID: 0}
+  - texturedProxiesShader: {fileID: 4800000, guid: be83f4bda8340694c86eec6d2e14582d,
+      type: 3}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

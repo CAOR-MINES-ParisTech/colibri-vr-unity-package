@@ -1,0 +1,20 @@
+{
+  "name": "com.mines-paristech.colibri-vr",
+  "version": "1.0.0",
+  "displayName": "COLIBRI VR",
+  "description": "Unity package for COLIBRI VR, the Core Open Lab on Image-Based Rendering Innovation for Virtual Reality.",
+  "unity": "2019.3",
+  "unityRelease": "2f1",
+  "dependencies": {
+ },
+ "keywords": [
+    "virtual reality",
+    "image-based rendering",
+    "view-dependent"
+  ],
+  "author": {
+    "name": "Grégoire Dupont de Dinechin",
+    "email": "gregoire@dinechin.org",
+    "url": "https://www.greg3dinechin.com"
+  }
+}
