@@ -24,6 +24,7 @@ namespace COLIBRIVR
         public const string bundleName = "BundleName";
         public const string processingInfoHeader = "# Processing information file";
         public const string processingInfoSuccessfulBundle = "# These assets were successfully bundled.";
+        public const string assemblyName = "mines-paristech.colibri-vr";
 
 #endregion //CONST_FIELDS
 
@@ -69,7 +70,7 @@ namespace COLIBRIVR
         public static System.Type GetTypeFromBundledAssetName(string bundledAssetName)
         {
             string[] split = bundledAssetName.Split('-');
-            return System.Type.GetType(split[0] + ", Assembly-CSharp");
+            return System.Type.GetType(split[0] + ", " + assemblyName);
         }
 
 #endregion //STATIC_METHODS

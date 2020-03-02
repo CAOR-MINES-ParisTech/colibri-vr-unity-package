@@ -65,6 +65,7 @@ namespace COLIBRIVR.Rendering
         public override void InitializeLinks()
         {
             base.InitializeLinks();
+            _helperULR.InitializeLinks();
             sceneRepresentationMethods = _helperULR.GetULRSceneRepresentationMethods();
         }
 
