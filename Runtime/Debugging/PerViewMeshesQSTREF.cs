@@ -42,7 +42,7 @@ namespace COLIBRIVR.Debugging
             processing = GeneralToolkit.GetOrCreateChildComponent<Processing.Processing>(transform);
             processing.Reset();
             // Reset the geometry processing parameters.
-            _geometryProcessingMethod = (PerViewMeshesQSTR)processing.processingMethods[ProcessingMethod.indexPerViewMeshesQSTR];
+            _geometryProcessingMethod = (Processing.PerViewMeshesQSTR)processing.processingMethods[ProcessingMethod.indexPerViewMeshesQSTR];
         }
 
         /// <inheritdoc/>
