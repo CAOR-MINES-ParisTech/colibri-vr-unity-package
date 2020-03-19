@@ -10,6 +10,15 @@ namespace COLIBRIVR.Rendering
     public class Helper_ULRCamera : MonoBehaviour
     {
 
+#region  CONST_FIELDS
+
+        private const string _shaderNameVertexCamWeightsBuffer = "_VertexCamWeightsBuffer";
+        private const string _shaderNameVertexCamIndicesBuffer = "_VertexCamIndicesBuffer";
+        private const string _shaderNameBlendFieldComputationParams = "_BlendFieldComputationParams";
+        private const string _shaderNameIsSceneViewCamera = "_IsSceneViewCamera";
+
+#endregion //CONST_FIELDS
+
 #region FIELDS
 
         private bool _initialized;
@@ -156,10 +165,10 @@ namespace COLIBRIVR.Rendering
                         Graphics.ClearRandomWriteTargets();
                         Graphics.SetRandomWriteTarget(1, _vertexCamWeightsBufferList[renderedObjIndex]);
                         Graphics.SetRandomWriteTarget(2, _vertexCamIndicesBufferList[renderedObjIndex]);
-                        currentBlendingMat.SetBuffer("_VertexCamWeightsBuffer", _vertexCamWeightsBufferList[renderedObjIndex]);
-                        currentBlendingMat.SetBuffer("_VertexCamIndicesBuffer", _vertexCamIndicesBufferList[renderedObjIndex]);
-                        currentBlendingMat.SetVector("_BlendFieldComputationParams", blendFieldComputationParams);
-                        currentBlendingMat.SetInt("_IsSceneViewCamera", _isSceneViewCamera ? 1 : 0);
+                        currentBlendingMat.SetBuffer(_shaderNameVertexCamWeightsBuffer, _vertexCamWeightsBufferList[renderedObjIndex]);
+                        currentBlendingMat.SetBuffer(_shaderNameVertexCamIndicesBuffer, _vertexCamIndicesBufferList[renderedObjIndex]);
+                        currentBlendingMat.SetVector(_shaderNameBlendFieldComputationParams, blendFieldComputationParams);
+                        currentBlendingMat.SetInt(_shaderNameIsSceneViewCamera, _isSceneViewCamera ? 1 : 0);
                     }
                     renderedObjIndex += increment;
                 }

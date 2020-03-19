@@ -26,6 +26,13 @@ namespace COLIBRIVR
     public class CameraSetup : MonoBehaviour, IPreviewCaller
     {
 
+#region CONST_FIELDS
+
+        private const string _propertyNameIsColorSourceCamIndices = "_isColorSourceCamIndices";
+        private const string _shaderNameIsColorSourceCamIndices = "_IsColorSourceCamIndices";
+
+#endregion //CONST_FIELDS
+
 #region STATIC_METHODS
 
         /// <summary>
@@ -243,7 +250,7 @@ namespace COLIBRIVR
         /// <summary>
         /// On preview index change, update the gizmos' color;
         /// </summary>
-        private void OnPreviewIndexChange()
+        public void OnPreviewIndexChange()
         {
             UpdateGizmosColor();
         }
@@ -288,51 +295,6 @@ namespace COLIBRIVR
             }
         }
 
-        // /// <summary>
-        // /// Draws camera gizmos showing the current acquisition setup.
-        // /// </summary>
-        // public void DrawGizmos()
-        // {
-        //     Matrix4x4 tempMatrix = Gizmos.matrix;
-        //     Color tempColor = Gizmos.color;
-        //     if(cameraModels != null)
-        //         for(int i = 0; i < cameraModels.Length; i++)
-        //             DrawGizmo(i);
-        //     Gizmos.matrix = tempMatrix;
-        //     Gizmos.color = tempColor;
-        // }
-
-        // /// <summary>
-        // /// Draws a camera gizmo for the given index.
-        // /// </summary>
-        // /// <param name="index"></param> The source camera index.
-        // private void DrawGizmo(int index)
-        // {
-        //     CameraModel cameraModel = cameraModels[index];
-        //     SetGizmoColor(index);
-        //     cameraModel.focalDistance = gizmoSize;
-        //     cameraModel.DrawGizmo();
-        // }
-
-        // /// <summary>
-        // /// Sets the gizmo color for the given source camera gizmo.
-        // /// </summary>
-        // /// <param name="index"></param> The index of the given source camera gizmo.
-        // private void SetGizmoColor(int index)
-        // {
-        //     if (_isColorSourceCamIndices)
-        //     {
-        //         Gizmos.color = GeneralToolkit.GetColorForIndex(index, cameraModels.Length);
-        //     }
-        //     else
-        //     {
-        //         Gizmos.color = Color.cyan;
-        //         GameObject activeGO = Selection.activeGameObject;
-        //         if(activeGO == cameraModels[index].gameObject || (activeGO == gameObject && index == previewIndex))
-        //             Gizmos.color = Color.yellow;
-        //     }
-        // }
-
         /// <summary>
         /// Enables the user to choose whether the displayed color helps visualize the source camera indices.
         /// </summary>
@@ -342,7 +304,7 @@ namespace COLIBRIVR
             serializedObject.Update();
             string label = "Color is indices:";
             string tooltip = "Whether the displayed colors help visualize the source camera indices instead of the actual texture colors.";
-            SerializedProperty propertyIsColorSourceCamIndices = serializedObject.FindProperty("_isColorSourceCamIndices");
+            SerializedProperty propertyIsColorSourceCamIndices = serializedObject.FindProperty(_propertyNameIsColorSourceCamIndices);
             propertyIsColorSourceCamIndices.boolValue = EditorGUILayout.Toggle(new GUIContent(label, tooltip), propertyIsColorSourceCamIndices.boolValue);
             serializedObject.ApplyModifiedProperties();
         }
@@ -353,7 +315,7 @@ namespace COLIBRIVR
         /// <param name="blendingMaterial"></param> The blending material to notify.
         public void SetColorIsIndices(ref Material blendingMaterial)
         {
-            blendingMaterial.SetInt("_IsColorSourceCamIndices", _isColorSourceCamIndices ? 1 : 0);
+            blendingMaterial.SetInt(_shaderNameIsColorSourceCamIndices, _isColorSourceCamIndices ? 1 : 0);
         }
 
 #endif //UNITY_EDITOR
@@ -407,13 +369,9 @@ namespace COLIBRIVR
         /// Sets additional parameters for the camera setup.
         /// </summary>
         /// <param name="newInitialViewingPosition"></param> The new value to set for the initial viewing position.
-        /// <param name="newGizmoSize"></param> The new value to set for the gizmo size.
-        public void SetAdditionalParameters(Vector3 newInitialViewingPosition, float newGizmoSize)
+        public void SetAdditionalParameters(Vector3 newInitialViewingPosition)
         {
             initialViewingPosition = newInitialViewingPosition;
-#if UNITY_EDITOR
-            gizmoSize = newGizmoSize;
-#endif //UNITY_EDITOR
         }
 
         /// <summary>

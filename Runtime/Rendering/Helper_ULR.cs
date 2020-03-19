@@ -22,6 +22,24 @@ namespace COLIBRIVR.Rendering
 
         public const int maxBlendCamCount = 4;
 
+        private const string _propertyNameOptimizeForHighFramerates = "_optimizeForHighFramerates";
+        private const string _propertyNameTargetFramerate = "targetFramerate";
+        private const string _propertyNameMaxFrameCountForProcessing = "maxFrameCountForProcessing";
+        private const string _propertyNameBlendCamCount = "blendCamCount";
+        private const string _propertyNameResolutionWeight = "_resolutionWeight";
+        private const string _propertyNameDepthCorrectionFactor = "_depthCorrectionFactor";
+        private const string _propertyNameGlobalTextureMapWeight = "_globalTextureMapWeight";
+        private const string _shaderNameDepthDataDimensionsInv = "_DepthDataDimensionsInv";
+        private const string _shaderNameLossyScale = "_LossyScale";
+        private const string _shaderNameBlendCamCount = "_BlendCamCount";
+        private const string _shaderNameResolutionWeight = "_ResolutionWeight";
+        private const string _shaderNameDepthCorrectionFactor = "_DepthCorrectionFactor";
+        private const string _shaderNameGlobalTextureMapWeight = "_GlobalTextureMapWeight";
+        private const string _shaderNameSourceCamsWorldXYZBuffer = "_SourceCamsWorldXYZBuffer";
+        private const string _shaderNameSourceCamsFieldsOfViewBuffer = "_SourceCamsFieldsOfViewBuffer";
+        private const string _shaderNameSourceCamsViewMatricesBuffer = "_SourceCamsViewMatricesBuffer";
+        private const string _shaderNameSourceCamsDistanceRangesBuffer = "_SourceCamsDistanceRangesBuffer";
+
 #endregion //CONST_FIELDS
 
 #region FIELDS
@@ -117,7 +135,7 @@ namespace COLIBRIVR.Rendering
             // Enable the user to choose whether to optimize for high framerates.
             string label = "Optimized version:";
             string tooltip = "Method will be optimized for high framerates, slightly reducing visual quality.";
-            SerializedProperty propertyOptimize = serializedObject.FindProperty("_optimizeForHighFramerates");
+            SerializedProperty propertyOptimize = serializedObject.FindProperty(_propertyNameOptimizeForHighFramerates);
             bool optimizedVersion = EditorGUILayout.Toggle(new GUIContent(label, tooltip), propertyOptimize.boolValue);
             if(optimizedVersion != propertyOptimize.boolValue)
                 _shouldResetMaterial = true;
@@ -126,38 +144,38 @@ namespace COLIBRIVR.Rendering
             {
                 label = "Target framerate:";
                 tooltip = "Target framerate (in frames per second) that the optimized ULR method will attempt to reach.";
-                SerializedProperty propertyTargetFramerate = serializedObject.FindProperty("targetFramerate");
+                SerializedProperty propertyTargetFramerate = serializedObject.FindProperty(_propertyNameTargetFramerate);
                 propertyTargetFramerate.intValue = EditorGUILayout.IntSlider(new GUIContent(label, tooltip), targetFramerate, 1, 120);
                 label = "Max. frame count:";
                 tooltip = "Maximum frame count after which all of the mesh's vertices have to be processed.";
-                SerializedProperty propertyMaxFrameCount = serializedObject.FindProperty("maxFrameCountForProcessing");
+                SerializedProperty propertyMaxFrameCount = serializedObject.FindProperty(_propertyNameMaxFrameCountForProcessing);
                 propertyMaxFrameCount.intValue = EditorGUILayout.IntSlider(new GUIContent(label, tooltip), maxFrameCountForProcessing, 1, 10);
             }
             // Enable the user to choose the number of blended cameras.
             label = "Blend cam. count:";
             tooltip = "Number of source cameras that will have a non-zero blending weight for a given fragment.";
-            SerializedProperty propertyBlendCamCount = serializedObject.FindProperty("blendCamCount");
+            SerializedProperty propertyBlendCamCount = serializedObject.FindProperty(_propertyNameBlendCamCount);
             propertyBlendCamCount.intValue = EditorGUILayout.IntSlider(new GUIContent(label, tooltip), propertyBlendCamCount.intValue, 1, maxBlendCamCount);
             // Enable the user to choose the maximum blending angle.
             label = "Max. blend angle:";
             tooltip = "Maximum angle difference (degrees) between source ray and view ray for the color value to be blended.\n";
             tooltip += "(Note: this value also accounts for resolution difference when relevant.)";
-            SerializedProperty propertyMaxBlendAngle = serializedObject.FindProperty("_maxBlendAngle");
+            SerializedProperty propertyMaxBlendAngle = serializedObject.FindProperty(_propertyNameMaxBlendAngle);
             propertyMaxBlendAngle.floatValue = EditorGUILayout.Slider(new GUIContent(label, tooltip), propertyMaxBlendAngle.floatValue, 1f, 180f);
             // Enable the user to choose the relative weight of the resolution factor.
             label = "Res. weight:";
             tooltip = "Relative impact of the {resolution} factor compared to the {angle difference} factor in the ULR algorithm.";
-            SerializedProperty propertyResolutionWeight = serializedObject.FindProperty("_resolutionWeight");
+            SerializedProperty propertyResolutionWeight = serializedObject.FindProperty(_propertyNameResolutionWeight);
             propertyResolutionWeight.floatValue = EditorGUILayout.Slider(new GUIContent(label, tooltip), propertyResolutionWeight.floatValue, 0f, 0.9f);
             // Enable the user to choose the value of the depth correction factor.
             label = "Depth corr.:";
             tooltip = "Depth correction factor to check visibility in each view based on the corresponding depth map.";
-            SerializedProperty propertyDepthCorrectionFactor = serializedObject.FindProperty("_depthCorrectionFactor");
+            SerializedProperty propertyDepthCorrectionFactor = serializedObject.FindProperty(_propertyNameDepthCorrectionFactor);
             propertyDepthCorrectionFactor.floatValue = EditorGUILayout.Slider(new GUIContent(label, tooltip), propertyDepthCorrectionFactor.floatValue, 0f, 10f);
             // Enable the user to choose the value of the global texture map weight.
             label = "Tex. map weight:";
             tooltip = "Relative weight of the global texture map, compared to the estimated color.";
-            SerializedProperty propertyGlobalTextureMapWeight = serializedObject.FindProperty("_globalTextureMapWeight");
+            SerializedProperty propertyGlobalTextureMapWeight = serializedObject.FindProperty(_propertyNameGlobalTextureMapWeight);
             propertyGlobalTextureMapWeight.floatValue = EditorGUILayout.Slider(new GUIContent(label, tooltip), propertyGlobalTextureMapWeight.floatValue, 0f, 1f);
         }
 
@@ -226,10 +244,10 @@ namespace COLIBRIVR.Rendering
         /// <param name="blendingMaterial"></param> The blending material to modify.
         public void InitializeBlendingMaterialParameters(ref Material blendingMaterial)
         {
-            blendingMaterial.SetTexture("_ColorData", PMColorTextureArray.colorData); 
-            blendingMaterial.SetInt("_SourceCamCount", numberOfSourceCameras);
-            blendingMaterial.SetTexture("_DepthData", PMDepthTextureArray.depthData);
-            blendingMaterial.SetVector("_DepthDataDimensionsInv", new Vector2(1f/PMDepthTextureArray.depthData.width, 1f/PMDepthTextureArray.depthData.height));
+            blendingMaterial.SetTexture(ColorTextureArray.shaderNameColorData, PMColorTextureArray.colorData); 
+            blendingMaterial.SetInt(_shaderNameSourceCamCount, numberOfSourceCameras);
+            blendingMaterial.SetTexture(DepthTextureArray.shaderNameDepthData, PMDepthTextureArray.depthData);
+            blendingMaterial.SetVector(_shaderNameDepthDataDimensionsInv, new Vector2(1f/PMDepthTextureArray.depthData.width, 1f/PMDepthTextureArray.depthData.height));
         }
         
         /// <summary>
@@ -246,7 +264,7 @@ namespace COLIBRIVR.Rendering
             MaterialPropertyBlock propertyBlock = new MaterialPropertyBlock();
             for(int i = 0; i < materials.Length; i++)
             {
-                propertyBlock.SetTexture("_GlobalTextureMap", PMGlobalTextureMap.textureMaps[i]);
+                propertyBlock.SetTexture(GlobalTextureMap.shaderNameGlobalTextureMap, PMGlobalTextureMap.textureMaps[i]);
                 renderer.SetPropertyBlock(propertyBlock, i);
             }
         }
@@ -286,16 +304,16 @@ namespace COLIBRIVR.Rendering
         {
             if(_shouldResetMaterial)
                 ResetBlendingMaterial(ref blendingMaterial);
-            blendingMaterial.SetVector("_LossyScale", transform.lossyScale);
-            blendingMaterial.SetInt("_BlendCamCount", blendCamCount);
-            blendingMaterial.SetFloat("_MaxBlendAngle", _maxBlendAngle);
-            blendingMaterial.SetFloat("_ResolutionWeight", _resolutionWeight);
-            blendingMaterial.SetFloat("_DepthCorrectionFactor", _depthCorrectionFactor);
-            blendingMaterial.SetFloat("_GlobalTextureMapWeight", _globalTextureMapWeight);
-            blendingMaterial.SetBuffer("_SourceCamsWorldXYZBuffer", _sourceCamsWorldXYZBuffer);
-            blendingMaterial.SetBuffer("_SourceCamsFieldsOfViewBuffer", _sourceCamsFieldsOfViewBuffer);
-            blendingMaterial.SetBuffer("_SourceCamsViewMatricesBuffer", _sourceCamsViewMatricesBuffer);
-            blendingMaterial.SetBuffer("_SourceCamsDistanceRangesBuffer", _sourceCamsDistanceRangesBuffer);
+            blendingMaterial.SetVector(_shaderNameLossyScale, transform.lossyScale);
+            blendingMaterial.SetInt(_shaderNameBlendCamCount, blendCamCount);
+            blendingMaterial.SetFloat(_shaderNameMaxBlendAngle, _maxBlendAngle);
+            blendingMaterial.SetFloat(_shaderNameResolutionWeight, _resolutionWeight);
+            blendingMaterial.SetFloat(_shaderNameDepthCorrectionFactor, _depthCorrectionFactor);
+            blendingMaterial.SetFloat(_shaderNameGlobalTextureMapWeight, _globalTextureMapWeight);
+            blendingMaterial.SetBuffer(_shaderNameSourceCamsWorldXYZBuffer, _sourceCamsWorldXYZBuffer);
+            blendingMaterial.SetBuffer(_shaderNameSourceCamsFieldsOfViewBuffer, _sourceCamsFieldsOfViewBuffer);
+            blendingMaterial.SetBuffer(_shaderNameSourceCamsViewMatricesBuffer, _sourceCamsViewMatricesBuffer);
+            blendingMaterial.SetBuffer(_shaderNameSourceCamsDistanceRangesBuffer, _sourceCamsDistanceRangesBuffer);
         }
 
         /// <summary>

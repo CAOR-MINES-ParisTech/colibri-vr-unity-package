@@ -29,7 +29,7 @@ namespace COLIBRIVR.ExternalConnectors
         {
             get
             {
-                return Path.Combine(PackageReference.GetPackagePath(true), Path.Combine("Runtime", "ExternalConnectors"));
+                return Path.Combine(PackageReference.GetPackagePath(false), Path.Combine("Runtime", "ExternalConnectors"));
             }
         }
         private static string _convertPLYtoOBJFileName { get { return "Blender_ConvertPLYtoOBJ.py"; } }

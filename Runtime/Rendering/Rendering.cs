@@ -21,6 +21,11 @@ namespace COLIBRIVR.Rendering
 
 #region CONST_FIELDS
 
+        public const string propertyNameLaunchOrderIndex = "launchOrderIndex";
+        public const string propertyNameLaunchOnAwake = "_launchOnAwake";
+        public const string propertyNameRenderingMethodIndex = "_renderingMethodIndex";
+        public const string propertyNameEvaluationMethodIndex = "_evaluationMethodIndex";
+
         private const string _renderCallerName = "Rendered image";
         private const string _evalCallerName = "Evaluation";
 
@@ -310,8 +315,8 @@ namespace COLIBRIVR.Rendering
             {
                 // Use a shader to compute the evaluation metric for each pixel and display it as a color value.
                 GeneralToolkit.CreateRenderTexture(ref _previewEvalTexture, tempCameraModel.pixelResolution, 0, RenderTextureFormat.ARGB32, true, FilterMode.Point, TextureWrapMode.Clamp);
-                selectedEvaluationMethod.evaluationMaterial.SetTexture("_TextureOne", processing.previewSourceTexture);
-                selectedEvaluationMethod.evaluationMaterial.SetTexture("_TextureTwo", _previewRenderTexture);
+                selectedEvaluationMethod.evaluationMaterial.SetTexture(EvaluationMethod.shaderNameTextureOne, processing.previewSourceTexture);
+                selectedEvaluationMethod.evaluationMaterial.SetTexture(EvaluationMethod.shaderNameTextureTwo, _previewRenderTexture);
                 Graphics.Blit(null, _previewEvalTexture, selectedEvaluationMethod.evaluationMaterial);
                 // Display the created texture in the preview window.
                 PreviewWindow.DisplayImage(_evalCallerName, _previewEvalTexture, previewMaxIndex);
@@ -351,20 +356,19 @@ namespace COLIBRIVR.Rendering
 #if UNITY_EDITOR
             // Initialize the evaluation method.
             selectedEvaluationMethod.InitializeEvaluationMethod();
-#endif //UNITY_EDITOR
-            yield return null;
-            GeneralToolkit.UnloadAssetBundleInMemory(false);
-            // Indicate that loading has finished.
-            _launched = true;
-            Debug.Log(GeneralToolkit.FormatScriptMessage(this.GetType(), "Finished initialization."));
-#if UNITY_EDITOR
             // Load the preview images.
             yield return StartCoroutine(processing.PrepareLoadingSourceImagesAsPreviewCoroutine());
             if(gameObject == Selection.activeGameObject)
                 LoadRenderedViewAsPreview();
 #endif //UNITY_EDITOR
+            // Unload the asset bundle.
+            yield return null;
+            GeneralToolkit.UnloadAssetBundleInMemory(false);
+            // Indicate that loading has finished.
+            _launched = true;
+            Debug.Log(GeneralToolkit.FormatScriptMessage(this.GetType(), "Finished initialization for object " + gameObject.name + "."));
             // Send an event on loading finished.
-            if(OnLoadingFinished != null)
+            if (OnLoadingFinished != null)
                 OnLoadingFinished();
         }
 

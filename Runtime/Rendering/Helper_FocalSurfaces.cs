@@ -15,6 +15,13 @@ namespace COLIBRIVR.Rendering
     public class Helper_FocalSurfaces : Method
     {
 
+#region CONST_FIELDS
+
+        private const string _propertyNameFocalLength = "_focalLength";
+        private const string _propertyNameFocalBounds = "_focalBounds";
+
+#endregion //CONST_FIELDS
+
 #region FIELDS
 
         [SerializeField] private float _focalLength;
@@ -51,12 +58,12 @@ namespace COLIBRIVR.Rendering
             // Enable the user to choose boundaries for the focal length.
             string label = "Focal bounds:";
             string tooltip = "Boundaries for the choice of the focal distance (meters).";
-            SerializedProperty propertyFocalBounds = serializedObject.FindProperty("_focalBounds");
+            SerializedProperty propertyFocalBounds = serializedObject.FindProperty(_propertyNameFocalBounds);
             propertyFocalBounds.vector2Value = EditorGUILayout.Vector2Field(new GUIContent(label, tooltip), propertyFocalBounds.vector2Value);
             // Enable the user to choose the focal length.
             label = "Focal length:";
             tooltip = "Focal length of the rendering system (meters). Objects will seem in focus if their distance to the source cameras is close to the focal length.";
-            SerializedProperty propertyFocalLength = serializedObject.FindProperty("_focalLength");
+            SerializedProperty propertyFocalLength = serializedObject.FindProperty(_propertyNameFocalLength);
             propertyFocalLength.floatValue = EditorGUILayout.Slider(new GUIContent(label, tooltip), propertyFocalLength.floatValue, propertyFocalBounds.vector2Value.x, propertyFocalBounds.vector2Value.y);
         }
 
@@ -107,7 +114,7 @@ namespace COLIBRIVR.Rendering
         /// <param name="blendingMaterial"></param> The blending material to modify.
         public void SendFocalLengthToBlendingMaterial(ref Material blendingMaterial)
         {
-            blendingMaterial.SetFloat("_FocalLength", _focalLength);
+            blendingMaterial.SetFloat(_shaderNameFocalLength, _focalLength);
         }
 
 #endregion //METHODS

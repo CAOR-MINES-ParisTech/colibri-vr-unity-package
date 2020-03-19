@@ -4,7 +4,6 @@
 /// Author: Grégoire Dupont de Dinechin, gregoire@dinechin.org
 
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using COLIBRIVR.Processing;
 
@@ -19,7 +18,7 @@ namespace COLIBRIVR.Rendering
 
 #region FIELDS
 
-        private Texture2D _colorTex;
+        protected Texture2D _colorTex;
 
 #endregion //FIELDS
         
@@ -53,6 +52,7 @@ namespace COLIBRIVR.Rendering
         public override void InitializeLinks()
         {
             base.InitializeLinks();
+            // Define the scene representation methods.
             sceneRepresentationMethods = new ProcessingMethod[] { PMColorTextureArray, PMPerViewMeshesQSTR };
         }
 
@@ -63,6 +63,8 @@ namespace COLIBRIVR.Rendering
             yield return StartCoroutine(LoadSceneRepresentationCoroutine());
             // Initialize the blending material.
             InitializeMaterial();
+            // Send the texture array to the material.
+            UpdateMaterialWithColorData();
             // Assign the material to the loaded focal surfaces.
             AssignMaterialToGeometricProxy();
         }
@@ -77,6 +79,14 @@ namespace COLIBRIVR.Rendering
         public override void ClearRenderingMethod()
         {
             base.ClearRenderingMethod();
+        }
+
+        /// <summary>
+        /// Initializes the blending material.
+        /// </summary>
+        public virtual void InitializeMaterial()
+        {
+            blendingMaterial = new Material(GeneralToolkit.shaderRenderingTexturedProxies);
         }
 
 #endregion //INHERITANCE_METHODS
@@ -94,14 +104,11 @@ namespace COLIBRIVR.Rendering
         }
 
         /// <summary>
-        /// Initializes the blending material.
+        /// Updates the blending material with the color texture array.
         /// </summary>
-        private void InitializeMaterial()
+        private void UpdateMaterialWithColorData()
         {
-            // Create the blending material from the corresponding shader.
-            blendingMaterial = new Material(GeneralToolkit.shaderRenderingTexturedProxies);
-            // Store the color data.
-            blendingMaterial.SetTexture("_ColorTexArray", PMColorTextureArray.colorData);
+            blendingMaterial.SetTexture(ColorTextureArray.shaderNameColorData, PMColorTextureArray.colorData);
         }
 
         /// <summary>
@@ -114,7 +121,7 @@ namespace COLIBRIVR.Rendering
             {
                 MeshRenderer meshRenderer = PMPerViewMeshesQSTR.perViewMeshTransforms[sourceCamIndex].gameObject.AddComponent<MeshRenderer>();
                 meshRenderer.material = blendingMaterial;
-                properties.SetFloat("_SourceCamIndex", sourceCamIndex);
+                properties.SetFloat(_shaderNameSourceCamIndex, sourceCamIndex);
                 meshRenderer.SetPropertyBlock(properties);
             }
         }

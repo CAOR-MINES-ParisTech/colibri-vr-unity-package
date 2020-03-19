@@ -27,6 +27,12 @@ namespace COLIBRIVR.Evaluation
         }
 
         /// <inheritdoc/>
+        public override bool HasAdditionalParameters()
+        {
+            return false;
+        }
+
+        /// <inheritdoc/>
         public override void InitializeEvaluationMethod()
         {
 

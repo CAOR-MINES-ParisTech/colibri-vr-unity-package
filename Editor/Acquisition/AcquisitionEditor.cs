@@ -44,13 +44,13 @@ namespace COLIBRIVR.Acquisition
             _targetObject.Selected();
             // Get the target properties.
             _objectCameraSetup = new SerializedObject(_targetObject.cameraSetup);
-            _propertyLockSetup = serializedObject.FindProperty("_lockSetup");
-            _propertyCameraCount = serializedObject.FindProperty("_cameraCount");
-            _propertyCameraPrefab = serializedObject.FindProperty("_cameraPrefab");
-            _propertyAcquireDepth = serializedObject.FindProperty("_acquireDepthData");
-            _propertyCopyGlobalMesh = serializedObject.FindProperty("_copyGlobalMesh");
-            _propertySetupType = serializedObject.FindProperty("_setupType");
-            _propertySetupDirection = serializedObject.FindProperty("_setupDirection");
+            _propertyLockSetup = serializedObject.FindProperty(Acquisition.propertyNameLockSetup);
+            _propertyCameraCount = serializedObject.FindProperty(Acquisition.propertyNameCameraCount);
+            _propertyCameraPrefab = serializedObject.FindProperty(Acquisition.propertyNameCameraPrefab);
+            _propertyAcquireDepth = serializedObject.FindProperty(Acquisition.propertyNameAcquireDepthData);
+            _propertyCopyGlobalMesh = serializedObject.FindProperty(Acquisition.propertyNameCopyGlobalMesh);
+            _propertySetupType = serializedObject.FindProperty(Acquisition.propertyNameSetupType);
+            _propertySetupDirection = serializedObject.FindProperty(Acquisition.propertyNameSetupDirection);
         }
 
         /// <summary>

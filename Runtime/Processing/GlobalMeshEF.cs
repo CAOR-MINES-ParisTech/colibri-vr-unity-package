@@ -22,6 +22,8 @@ namespace COLIBRIVR.Processing
 
         public const string globalMeshAssetName = "GlobalMesh";
 
+        private const string _propertyNameGlobalMeshPathAbsolute = "_globalMeshPathAbsolute";
+
 #endregion //CONST_FIELDS
 
 #region FIELDS
@@ -112,7 +114,7 @@ namespace COLIBRIVR.Processing
         {
             SerializedObject serializedObject = new SerializedObject(this);
             serializedObject.Update();
-            SerializedProperty propertyGlobalMeshPath = serializedObject.FindProperty("_globalMeshPathAbsolute");
+            SerializedProperty propertyGlobalMeshPath = serializedObject.FindProperty(_propertyNameGlobalMeshPathAbsolute);
             // Enable the user to select another mesh by modifying the path.
             if(string.IsNullOrEmpty(_globalMeshPathAbsolute))
             {
@@ -175,7 +177,7 @@ namespace COLIBRIVR.Processing
                     AssetDatabase.Refresh();
                     yield return null;
                     // Make the mesh readable so that colliders can be added.
-                    ModelImporter modelImporter = ModelImporter.GetAtPath(Path.Combine("Assets", dstResourcesPath)) as ModelImporter;
+                    ModelImporter modelImporter = ModelImporter.GetAtPath(Path.Combine(PackageReference.GetPackagePath(true), dstResourcesPath)) as ModelImporter;
                     modelImporter.isReadable = true;
                     modelImporter.SaveAndReimport();
                     // Load the mesh from resources.

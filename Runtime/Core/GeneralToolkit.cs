@@ -1016,11 +1016,13 @@ namespace COLIBRIVR
         public static Shader shaderUnlitTexture { get { return Shader.Find("Unlit/Texture"); } }
         public static Shader shaderNormalizeByAlpha { get { return Shader.Find("COLIBRIVR/Core/NormalizeByAlpha"); } }
         public static Shader shaderImageProcessing { get { return Shader.Find("COLIBRIVR/Core/ImageProcessing"); } }
+        public static Shader shaderDebuggingConvertPreciseToVisualization { get { return Shader.Find("COLIBRIVR/Debugging/ConvertPreciseToVisualization"); } }
         public static Shader shaderAcquisitionRenderDistance { get { return Shader.Find("COLIBRIVR/Acquisition/RenderDistance"); } }
         public static Shader shaderAcquisitionConvert01ToColor { get { return Shader.Find("COLIBRIVR/Acquisition/Convert01ToColor"); } }
         public static Shader shaderProcessingGlobalTextureMap { get { return Shader.Find("COLIBRIVR/Processing/GlobalTextureMap"); } }
         public static Shader shaderRenderingTexturedGlobalMesh { get { return Shader.Find("COLIBRIVR/Rendering/TexturedGlobalMesh"); } }
         public static Shader shaderRenderingTexturedProxies { get { return Shader.Find("COLIBRIVR/Rendering/TexturedProxies"); } }
+        public static Shader shaderRenderingTexturedPerViewMeshesDT { get { return Shader.Find("COLIBRIVR/Rendering/TexturedPerViewMeshesDT"); } }
         public static Shader shaderRenderingDiskBlendedFocalSurfaces { get { return Shader.Find("COLIBRIVR/Rendering/DiskBlendedFocalSurfaces"); } }
         public static Shader shaderRenderingDiskBlendedPerViewMeshes { get { return Shader.Find("COLIBRIVR/Rendering/DiskBlendedPerViewMeshes"); } }
         public static Shader shaderRenderingULR { get { return Shader.Find("COLIBRIVR/Rendering/ULR"); } }
@@ -1053,6 +1055,27 @@ namespace COLIBRIVR
             enc.w = Mathf.Repeat(enc.w, 1.0f);
             enc -= new Vector4(enc.y, enc.z, enc.w, enc.w) * kEncodeBit;
             return enc;
+        }
+
+        /// <summary>
+        /// CPU copy of the built-in shader method DecodeFloatRGBA.
+        /// </summary>
+        /// <param name="enc"></param> The value to decode.
+        /// <returns></returns> The decoded float value (between 0 and 1).
+        public static float UnityDecodeFloatRGBA(Vector4 enc)
+        {
+            Vector4 kDecodeDot = new Vector4(1.0f, 1/255.0f, 1/65025.0f, 1/16581375.0f);
+            return Vector4.Dot(enc, kDecodeDot);
+        }
+
+        /// <summary>
+        /// Decodes an RGB color with 24-bit precision as a 0-1 float.
+        /// </summary>
+        /// <param name="colorValue"></param> The color value to decode.
+        /// <returns></returns> The decoded float value.
+        public static float Decode01FromPreciseColor(Color colorValue)
+        {
+            return UnityDecodeFloatRGBA(new Vector4(colorValue.r, colorValue.g, colorValue.b, 1));
         }
 
 #endregion //SHADERS
@@ -1282,12 +1305,17 @@ namespace COLIBRIVR
         /// <param name="ignoreAlphaChannel"></param> True if the alpha channel should be ignored for this effect, false otherwise.
         private static void RenderTextureApplyImageProcessing(ref RenderTexture renderTex, int iterationCount, ImageProcessingKernelType kernelType, int operationType, bool isZeroMask, bool ignoreAlphaChannel)
         {
+            const string shaderNamePixelResolution = "_PixelResolution";
+            const string shaderNameOperationType = "_OperationType";
+            const string shaderNameKernelType = "_KernelType";
+            const string shaderNameIsZeroMask = "_IsZeroMask";
+            const string shaderNameIgnoreAlphaChannel = "_IgnoreAlphaChannel";
             Material mat = new Material(shaderImageProcessing);
-            mat.SetVector("_PixelResolution", new Vector4(renderTex.width, renderTex.height, 0, 0));
-            mat.SetInt("_OperationType", operationType);
-            mat.SetInt("_KernelType", kernelType == ImageProcessingKernelType.Gaussian ? 0 : 1);
-            mat.SetInt("_IsZeroMask", isZeroMask ? 1 : 0);
-            mat.SetInt("_IgnoreAlphaChannel", ignoreAlphaChannel ? 1 : 0);
+            mat.SetVector(shaderNamePixelResolution, new Vector4(renderTex.width, renderTex.height, 0, 0));
+            mat.SetInt(shaderNameOperationType, operationType);
+            mat.SetInt(shaderNameKernelType, kernelType == ImageProcessingKernelType.Gaussian ? 0 : 1);
+            mat.SetInt(shaderNameIsZeroMask, isZeroMask ? 1 : 0);
+            mat.SetInt(shaderNameIgnoreAlphaChannel, ignoreAlphaChannel ? 1 : 0);
             RenderTexture tempRT = new RenderTexture(1, 1, 0);
             CreateRenderTexture(ref tempRT, new Vector2Int(renderTex.width, renderTex.height), renderTex.depth, renderTex.format, !renderTex.sRGB, renderTex.filterMode, renderTex.wrapMode);
             for(int i = 0; i < iterationCount; i++)
@@ -1410,7 +1438,7 @@ namespace COLIBRIVR
             bool isLoadingThread = false;
             while(_loadedBundlePath != bundlePath)
             {
-                if(string.IsNullOrEmpty(_loadedBundlePath))
+                if (string.IsNullOrEmpty(_loadedBundlePath))
                 {
                     _loadedBundlePath = bundlePath;
                     isLoadingThread = true;
@@ -1420,8 +1448,10 @@ namespace COLIBRIVR
             // If another coroutine is charged with loading the bundle, wait for it to complete.
             if(!isLoadingThread)
             {
-                while(_loadedBundle == null && _loadedBundlePath == bundlePath)
+                while (_loadedBundle == null && _loadedBundlePath == bundlePath)
+                {
                     yield return null;
+                }
             }
             // Otherwise, load the bundle.
             else

@@ -17,6 +17,14 @@ namespace COLIBRIVR.ExternalConnectors
     public class COLMAPHelper : ExternalHelper
     {
 
+#region CONST_FIELDS
+
+        private const string _propertyNameCOLMAPCameraIndex = "_COLMAPCameraIndex";
+        private const string _propertyNameIsSingleCamera = "_isSingleCamera";
+        private const string _propertyNameMaxImageSize = "_maxImageSize";
+
+#endregion //CONST_FIELDS
+
 #region PROPERTIES
 
         private string _updateDirectoryIndicatorPathEnd { get { return gameObject.name + gameObject.GetInstanceID() + "UpdateDirectory_TEMP.prefab"; } }
@@ -127,15 +135,15 @@ namespace COLIBRIVR.ExternalConnectors
             {
                 label = "Camera type";
                 tooltip = "COLMAP camera type of the camera(s) that acquired the source images.";
-                SerializedProperty propertyCOLMAPCameraIndex = serializedObject.FindProperty("_COLMAPCameraIndex");
+                SerializedProperty propertyCOLMAPCameraIndex = serializedObject.FindProperty(_propertyNameCOLMAPCameraIndex);
                 propertyCOLMAPCameraIndex.intValue = EditorGUILayout.Popup(new GUIContent(label, tooltip), propertyCOLMAPCameraIndex.intValue, COLMAPConnector.COLMAPCameraTypes.ToArray());
                 label = "Is single camera";
                 tooltip = "This value should be set to true if the source images were acquired by the same camera, false otherwise.";
-                SerializedProperty propertyIsSingleCamera = serializedObject.FindProperty("_isSingleCamera");
+                SerializedProperty propertyIsSingleCamera = serializedObject.FindProperty(_propertyNameIsSingleCamera);
                 propertyIsSingleCamera.boolValue = EditorGUILayout.Toggle(new GUIContent(label, tooltip), propertyIsSingleCamera.boolValue);
                 label = "Max. image size: ";
                 tooltip = "Maximum image size for the undistortion step. The resized images will be the ones used for rendering.";
-                SerializedProperty propertyMaxImageSize = serializedObject.FindProperty("_maxImageSize");
+                SerializedProperty propertyMaxImageSize = serializedObject.FindProperty(_propertyNameMaxImageSize);
                 propertyMaxImageSize.intValue = EditorGUILayout.IntSlider(new GUIContent(label, tooltip), propertyMaxImageSize.intValue, 1, 8192);
             }
             // If the button is pressed, display a dialog to confirm.

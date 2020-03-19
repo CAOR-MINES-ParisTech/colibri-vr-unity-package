@@ -79,6 +79,11 @@ namespace COLIBRIVR.Rendering
         public override void InitializeLinks()
         {
             base.InitializeLinks();
+            // Initialize links for the helper methods.
+            _helperCommandBuffer.InitializeLinks();
+            _helperDiskBlending.InitializeLinks();
+            _helperFocalSurfaces.InitializeLinks();
+            // Define the scene representation methods.
             sceneRepresentationMethods = new ProcessingMethod[] { PMColorTextureArray, PMPerViewMeshesFS };
         }
         
@@ -142,7 +147,7 @@ namespace COLIBRIVR.Rendering
             // Because many focal surfaces use the same mesh, enable instancing.
             blendingMaterial.enableInstancing = true;
             // Store the color data.
-            blendingMaterial.SetTexture("_ColorData", PMColorTextureArray.colorData);
+            blendingMaterial.SetTexture(Processing.ColorTextureArray.shaderNameColorData, PMColorTextureArray.colorData);
         }
 
         /// <summary>
@@ -163,9 +168,9 @@ namespace COLIBRIVR.Rendering
             _helperFocalSurfaces.SendFocalLengthToBlendingMaterial(ref blendingMaterial);
             // Indicate the cameras' indices and positions.
             MaterialPropertyBlock properties = new MaterialPropertyBlock();
-            properties.SetFloatArray("_SourceCamIndex", sourceCamIndices);
-            properties.SetVectorArray("_SourceCamPosXYZ", sourceCamPositions);
-            properties.SetFloatArray("_SourceCamIsOmnidirectional", sourceCamAreOmnidirectional);
+            properties.SetFloatArray(_shaderNameSourceCamIndex, sourceCamIndices);
+            properties.SetVectorArray(_shaderNameSourceCamPosXYZ, sourceCamPositions);
+            properties.SetFloatArray(_shaderNameSourceCamIsOmnidirectional, sourceCamAreOmnidirectional);
             // Clear the instructions in the command buffer.
             _helperCommandBuffer.commandBuffer.Clear();
             // Clear the camera target's color and depth buffers.

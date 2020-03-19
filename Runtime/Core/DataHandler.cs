@@ -26,6 +26,9 @@ namespace COLIBRIVR
         public const string processingInfoSuccessfulBundle = "# These assets were successfully bundled.";
         public const string assemblyName = "mines-paristech.colibri-vr";
 
+        private const string _propertyNameDataDirectory = "_dataDirectory";
+        private const string _propertyNameGenerateColliders = "generateColliders";
+
 #endregion //CONST_FIELDS
 
 #if UNITY_EDITOR
@@ -133,7 +136,7 @@ namespace COLIBRIVR
                 return;
             SerializedObject serializedObject = new SerializedObject(this);
             serializedObject.Update();
-            SerializedProperty propertyDataDirectory = serializedObject.FindProperty("_dataDirectory");
+            SerializedProperty propertyDataDirectory = serializedObject.FindProperty(_propertyNameDataDirectory);
             propertyDataDirectory.stringValue = newValue;
             serializedObject.ApplyModifiedProperties();
             if(_processingCaller != null)
@@ -147,7 +150,7 @@ namespace COLIBRIVR
         /// Saves additional information related to acquisition, with the given values.
         /// </summary>
         /// <param name="cameraSetup"></param> The camera setup containing the acquisition information.
-        public void SaveCOLIBRIAdditionalInformation(CameraSetup cameraSetup)
+        public void SaveCOLIBRIVRAdditionalInformation(CameraSetup cameraSetup)
         {
             // Determine the camera model, or initialize a new one if there is none.
             CameraModel cameraParams;
@@ -155,18 +158,14 @@ namespace COLIBRIVR
                 cameraParams = cameraSetup.cameraModels[0];
             else
                 cameraParams = CameraModel.CreateCameraModel();
-            // Get distance range, initial viewing position, and gizmo size.
-            Vector2 distanceRange = cameraParams.distanceRange;
+            // Get the initial viewing position.
             Vector3 initialViewingPos = cameraSetup.initialViewingPosition;
-            float gizmoSize = cameraSetup.gizmoSize;
             // Store this information in the additional information file.
             GeneralToolkit.CreateOrClear(PathType.File, additionalInfoFile);
             StringBuilder stringBuilder = new StringBuilder();
             stringBuilder.AppendLine("# COLIBRI VR additional information:");
-            stringBuilder.AppendLine("#   DISTANCE_RANGE, VIEWING_POSITION, GIZMO_FAR_PLANE");
-            string line = distanceRange.x + " " + distanceRange.y;
-            line += " " + initialViewingPos.x + " " + initialViewingPos.y + " " + initialViewingPos.z;
-            line += " " + gizmoSize;
+            stringBuilder.AppendLine("#   INITIAL_VIEWING_POSITION");
+            string line = initialViewingPos.x + " " + initialViewingPos.y + " " + initialViewingPos.z;
             stringBuilder.AppendLine(line);
             File.WriteAllText(additionalInfoFile, stringBuilder.ToString());
             // Delete any temporary camera model.
@@ -224,7 +223,7 @@ namespace COLIBRIVR
             serializedObject.Update();
             string label = "Generate colliders:";
             string tooltip = "Whether the displayed geometry should have colliders.";
-            SerializedProperty propertyGenerateColliders = serializedObject.FindProperty("generateColliders");
+            SerializedProperty propertyGenerateColliders = serializedObject.FindProperty(_propertyNameGenerateColliders);
             propertyGenerateColliders.boolValue = EditorGUILayout.Toggle(new GUIContent(label, tooltip), propertyGenerateColliders.boolValue);
             serializedObject.ApplyModifiedProperties();
         }
@@ -235,7 +234,7 @@ namespace COLIBRIVR
         /// Reads the stored additional information.
         /// </summary>
         /// <param name="cameraSetup"></param> The camera setup to modify with the parsed information.
-        public void ReadCOLIBRIAdditionalInformation(CameraSetup cameraSetup)
+        public void ReadCOLIBRIVRAdditionalInformation(CameraSetup cameraSetup)
         {
             string[] lines = File.ReadAllLines(additionalInfoFile);
             foreach(string line in lines)
@@ -243,12 +242,10 @@ namespace COLIBRIVR
                 if(!line.StartsWith("#"))
                 {
                     string[] split = line.Split(' ');
-                    if(split.Length > 5)
+                    if(split.Length > 2)
                     {
-                        // _clipPlanes = new Vector2(float.Parse(split[0]), float.Parse(split[1]));
-                        Vector3 newInitialViewingPosition = new Vector3(float.Parse(split[2]), float.Parse(split[3]), float.Parse(split[4]));
-                        float newGizmoSize = float.Parse(split[5]);
-                        cameraSetup.SetAdditionalParameters(newInitialViewingPosition, newGizmoSize);
+                        Vector3 newInitialViewingPosition = new Vector3(float.Parse(split[0]), float.Parse(split[1]), float.Parse(split[2]));
+                        cameraSetup.SetAdditionalParameters(newInitialViewingPosition);
                     }
                 }
             }

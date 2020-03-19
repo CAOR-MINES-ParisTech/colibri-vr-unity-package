@@ -16,6 +16,12 @@ namespace COLIBRIVR
     public class COLIBRIVRSettings : ScriptableObject
     {
 
+#region CONST_FIELDS
+
+        private const string _propertyNamePreviewMaxResolution = "previewMaxResolution";
+
+#endregion //CONST_FIELDS
+
 #if UNITY_EDITOR
 
 #region STATIC_PROPERTIES
@@ -38,7 +44,7 @@ namespace COLIBRIVR
             GeneralToolkit.EditorNewSection("Package settings");
             string label = "Max. resolution for preview";
             string tooltip = "Maximum resolution for the preview images.";
-            SerializedProperty propertyPreviewMaxResolution = serializedSettings.FindProperty("previewMaxResolution");
+            SerializedProperty propertyPreviewMaxResolution = serializedSettings.FindProperty(_propertyNamePreviewMaxResolution);
             propertyPreviewMaxResolution.intValue = EditorGUILayout.IntSlider(new GUIContent(label, tooltip), propertyPreviewMaxResolution.intValue, 1, 8192);
 
             GeneralToolkit.EditorNewSection("External helper tools");

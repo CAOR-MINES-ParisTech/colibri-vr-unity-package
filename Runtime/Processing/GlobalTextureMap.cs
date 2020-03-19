@@ -24,6 +24,7 @@ namespace COLIBRIVR.Processing
 
         public const string textureMapAssetPrefix = "GlobalTextureMap";
         public const string propertyNameTextureMapResolutionMinMax = "_textureMapResolutionMinMax";
+        public const string shaderNameGlobalTextureMap = "_GlobalTextureMap";
 
 #endregion //CONST_FIELDS
 
@@ -203,7 +204,7 @@ namespace COLIBRIVR.Processing
             _previewCameraManager.previewCamera.backgroundColor = Color.clear;
             // Create the materials.
             _renderToTextureMapMat = new Material(GeneralToolkit.shaderProcessingGlobalTextureMap);
-            _renderToTextureMapMat.SetFloat("_FocalLength", focalLength);
+            _renderToTextureMapMat.SetFloat(_shaderNameFocalLength, focalLength);
             _normalizeByAlphaMat = new Material(GeneralToolkit.shaderNormalizeByAlpha);
             // Initialize the helper object for ULR.
             _helperULR = gameObject.AddComponent<Rendering.Helper_ULR>();

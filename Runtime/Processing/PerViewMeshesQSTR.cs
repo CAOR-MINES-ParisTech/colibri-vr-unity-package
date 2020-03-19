@@ -8,6 +8,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
+using COLIBRIVR.Rendering;
 
 namespace COLIBRIVR.Processing
 {
@@ -22,7 +23,30 @@ namespace COLIBRIVR.Processing
 
 #region CONST_FIELDS
 
+        public const string propertyNameMeshProjectionType = "_meshProjectionType";
         public const string perViewMeshAssetPrefix = "PerViewMeshAsset";
+
+        private const string _propertyNameTriangleErrorThreshold = "_triangleErrorThreshold";
+        private const string _propertyNameDisocclusionHandlingIndex = "_disocclusionHandlingIndex";
+        private const string _propertyNameRemoveBackground = "_removeBackground";
+        private const string _shaderNameQuadtreeBuffer = "_QuadtreeBuffer";
+        private const string _shaderNameViewXYZBuffer = "_ViewXYZBuffer";
+        private const string _shaderNameDistanceMap = "_DistanceMap";
+        private const string _shaderNameCurrentLOD = "_CurrentLOD";
+        private const string _shaderNameTriangleErrorThreshold = "_TriangleErrorThreshold";
+        private const string _shaderNameMeshProjectionType = "_MeshProjectionType";
+        private const string _shaderNameDisocclusionHandlingType = "_DisocclusionHandlingType";
+        private const string _shaderNameRemoveBackground = "_RemoveBackground";
+        private const string _shaderNameEquivalentPowerofTwoResolution = "_EquivalentPowerofTwoResolution";
+        private const string _shaderNamePixelResolution = "_PixelResolution";
+        private const string _shaderNameFieldOfView = "_FieldOfView";
+        private const string _shaderNameDistanceRange = "_DistanceRange";
+        private const string _shaderNameVertexBuffer = "_VertexBuffer";
+        private const string _shaderNameUVBuffer = "_UVBuffer";
+        private const string _shaderNameTriangleAppendBuffer = "_TriangleAppendBuffer";
+        private const string _shaderNameAccumulatedErrorBuffer = "_AccumulatedErrorBuffer";
+        private const string _kernelNameComputeQuadtreeValues = "ComputeQuadtreeValues";
+        private const string _kernelNameComputeBlockSplits = "ComputeBlockSplits";
 
 #endregion //CONST_FIELDS
 
@@ -47,12 +71,11 @@ namespace COLIBRIVR.Processing
         public Mesh[] perViewMeshes;
         public Transform[] perViewMeshTransforms;
 
-        [SerializeField] private bool _project3D;
+        [SerializeField] private Helper_DisocclusionTriangles _helperDisocclusionTriangles;
+        [SerializeField] private int _meshProjectionType;
         [SerializeField] private float _triangleErrorThreshold;
         [SerializeField] private bool _removeBackground;
         [SerializeField] private int _disocclusionHandlingIndex;
-        [SerializeField] private float _orthogonalityParameter;
-        [SerializeField] private float _triangleSizeParameter;
 
         private Vector2Int _correctedPixelResolution;
         private int _equivalentPoTResolution;
@@ -85,12 +108,21 @@ namespace COLIBRIVR.Processing
         public override void Reset()
         {
             base.Reset();
-            _project3D = true;
+            _meshProjectionType = 0;
             _triangleErrorThreshold = 0.1f;
             _removeBackground = false;
             _disocclusionHandlingIndex = 1;
-            _orthogonalityParameter = 0.1f;
-            _triangleSizeParameter = 0.1f;
+            // Initialize the helper methods.
+            _helperDisocclusionTriangles = GeneralToolkit.GetOrAddComponent<Helper_DisocclusionTriangles>(gameObject);
+            _helperDisocclusionTriangles.Reset();
+        }
+
+        /// <inheritdoc/>
+        public override void InitializeLinks()
+        {
+            base.InitializeLinks();
+            // Initialize links for the helper methods.
+            _helperDisocclusionTriangles.InitializeLinks();
         }
 
         /// <inheritdoc/>
@@ -172,12 +204,12 @@ namespace COLIBRIVR.Processing
             // Enable the user to choose a triangle error threshold.
             string label = "Error threshold: ";
             string tooltip = "Triangle error threshold (meters).";
-            SerializedProperty propertyTriangleError = serializedObject.FindProperty("_triangleErrorThreshold");
+            SerializedProperty propertyTriangleError = serializedObject.FindProperty(_propertyNameTriangleErrorThreshold);
             propertyTriangleError.floatValue = EditorGUILayout.Slider(new GUIContent(label, tooltip), propertyTriangleError.floatValue, 0f, 1f);
             // Enable the user to choose how to handle disocclusion edges.
             label = "Disocc. edges: ";
             tooltip = "How to handle disocclusion edges (i.e. prevent the display of \"rubber sheet\" triangles linking foreground and background).";
-            SerializedProperty propertyDisocclusionHandlingIndex = serializedObject.FindProperty("_disocclusionHandlingIndex");
+            SerializedProperty propertyDisocclusionHandlingIndex = serializedObject.FindProperty(_propertyNameDisocclusionHandlingIndex);
             GUIContent[] options = new GUIContent[2];
             options[0] = new GUIContent("No handling", "Disocclusion edges will be left untouched.");
             options[1] = new GUIContent("Remove edge triangles", "Disocclusion edge triangles will be removed.");
@@ -185,21 +217,15 @@ namespace COLIBRIVR.Processing
             // If the depth edges are to be removed, enable the user to modify additional parameters.
             if(propertyDisocclusionHandlingIndex.intValue == 1)
             {
-                // Enable the user to choose the value of the orthogonality parameter for the triangle removal step.
-                label = "Orthog. param.: ";
-                tooltip = "Orthogonality parameter, that prevents the display of triangles that face away from the acquisition camera.";
-                SerializedProperty propertyOrthogonalityParameter = serializedObject.FindProperty("_orthogonalityParameter");
-                propertyOrthogonalityParameter.floatValue = EditorGUILayout.Slider(new GUIContent(label, tooltip), propertyOrthogonalityParameter.floatValue, 0f, 1f);
-                // Enable the user to choose the value of the triangle size parameter for the triangle removal step.
-                label = "Size param.: ";
-                tooltip = "Triangle size parameter, that excludes triangles from being discarded if they are small enough.";
-                SerializedProperty propertyTriangleSizeParameter = serializedObject.FindProperty("_triangleSizeParameter");
-                propertyTriangleSizeParameter.floatValue = EditorGUILayout.Slider(new GUIContent(label, tooltip), propertyTriangleSizeParameter.floatValue, 0f, 1f);
+                // Enable the user to select parameters for detecting disocclusion triangles.
+                SerializedObject serializedObjectHelper = new SerializedObject(_helperDisocclusionTriangles);
+                _helperDisocclusionTriangles.SectionDisocclusionTriangles(serializedObjectHelper);
+                serializedObjectHelper.ApplyModifiedProperties();
             }
             // Enable the user to choose whether to remove the depth map's background or integrate it in the mesh.
             label = "Hide background: ";
             tooltip = "Whether to remove the background from the generated mesh.";
-            SerializedProperty propertyRemoveBackground = serializedObject.FindProperty("_removeBackground");
+            SerializedProperty propertyRemoveBackground = serializedObject.FindProperty(_propertyNameRemoveBackground);
             propertyRemoveBackground.boolValue = EditorGUILayout.Toggle(new GUIContent(label, tooltip), propertyRemoveBackground.boolValue);
             serializedObject.ApplyModifiedProperties();
         }
@@ -228,12 +254,11 @@ namespace COLIBRIVR.Processing
         public void InitializePerCall()
         {
             _computeShader = GeneralToolkit.computeShaderPerViewMeshesQSTR;
-            _computeShader.SetFloat("_TriangleErrorThreshold", _triangleErrorThreshold);
-            _computeShader.SetInt("_MeshProjectionType", _project3D ? 1 : 0);
-            _computeShader.SetInt("_DisocclusionHandlingType", _disocclusionHandlingIndex==1 ? 1 : 0);
-            _computeShader.SetInt("_RemoveBackground", _removeBackground ? 1 : 0);
-            _computeShader.SetFloat("_OrthogonalityParameter", _orthogonalityParameter);
-            _computeShader.SetFloat("_TriangleSizeParameter", _triangleSizeParameter);
+            _computeShader.SetFloat(_shaderNameTriangleErrorThreshold, _triangleErrorThreshold);
+            _computeShader.SetInt(_shaderNameMeshProjectionType, _meshProjectionType);
+            _computeShader.SetInt(_shaderNameDisocclusionHandlingType, _disocclusionHandlingIndex==1 ? 1 : 0);
+            _computeShader.SetInt(_shaderNameRemoveBackground, _removeBackground ? 1 : 0);
+            _helperDisocclusionTriangles.UpdateComputeShaderParameters(ref _computeShader);
         }
 
         /// <summary>
@@ -271,10 +296,10 @@ namespace COLIBRIVR.Processing
         {
             // Send the current camera model's parameters to the compute shader.
             _equivalentPoTResolution = Mathf.NextPowerOfTwo(Mathf.Max(_correctedPixelResolution.x, _correctedPixelResolution.y));
-            _computeShader.SetInt("_EquivalentPowerofTwoResolution", _equivalentPoTResolution);
-            _computeShader.SetInts("_PixelResolution", _correctedPixelResolution.x, _correctedPixelResolution.y);
-            _computeShader.SetFloats("_FieldOfView", cameraModel.fieldOfView.x, cameraModel.fieldOfView.y);
-            _computeShader.SetFloats("_DistanceRange", cameraModel.distanceRange.x, cameraModel.distanceRange.y);
+            _computeShader.SetInt(_shaderNameEquivalentPowerofTwoResolution, _equivalentPoTResolution);
+            _computeShader.SetInts(_shaderNamePixelResolution, _correctedPixelResolution.x, _correctedPixelResolution.y);
+            _computeShader.SetFloats(_shaderNameFieldOfView, cameraModel.fieldOfView.x, cameraModel.fieldOfView.y);
+            _computeShader.SetFloats(_shaderNameDistanceRange, cameraModel.distanceRange.x, cameraModel.distanceRange.y);
             // Compute buffer sizes.
             _quadtreeDepth = (int)Mathf.Log(_equivalentPoTResolution, 2) + 1;
             _quadtreeBufferSize = (int)((4 * _equivalentPoTResolution * _equivalentPoTResolution - 1) / 3f);
@@ -331,14 +356,14 @@ namespace COLIBRIVR.Processing
         private void ComputeQuadtreeValues()
         {
             // Send the buffers and texture to the compute shader at the appropriate kernel index.
-            int kernelIndex = _computeShader.FindKernel("ComputeQuadtreeValues");
-            _computeShader.SetBuffer(kernelIndex, "_QuadtreeBuffer", _quadtreeBuffer);
-            _computeShader.SetBuffer(kernelIndex, "_ViewXYZBuffer", _viewXYZBuffer);
-            _computeShader.SetTexture(kernelIndex, "_DistanceMap", distanceMap);
+            int kernelIndex = _computeShader.FindKernel(_kernelNameComputeQuadtreeValues);
+            _computeShader.SetBuffer(kernelIndex, _shaderNameQuadtreeBuffer, _quadtreeBuffer);
+            _computeShader.SetBuffer(kernelIndex, _shaderNameViewXYZBuffer, _viewXYZBuffer);
+            _computeShader.SetTexture(kernelIndex, _shaderNameDistanceMap, distanceMap);
             // Iterate on the level of detail, from fine to coarse.
             for(int lod = 0; lod < _quadtreeDepth; lod++)
             {
-                _computeShader.SetInt("_CurrentLOD", lod);
+                _computeShader.SetInt(_shaderNameCurrentLOD, lod);
                 Vector2 threadGroupXY = GetNumberOfBlocksPerRowAndColumn(lod) / 8f;
                 _computeShader.Dispatch(kernelIndex, Mathf.CeilToInt(threadGroupXY.x), Mathf.CeilToInt(threadGroupXY.y), 1);
             }
@@ -351,18 +376,18 @@ namespace COLIBRIVR.Processing
         private void ComputeBlockSplits()
         {
             // Send the buffers and texture to the compute shader at the appropriate kernel index.
-            int kernelIndex = _computeShader.FindKernel("ComputeBlockSplits");
-            _computeShader.SetBuffer(kernelIndex, "_QuadtreeBuffer", _quadtreeBuffer);
-            _computeShader.SetBuffer(kernelIndex, "_ViewXYZBuffer", _viewXYZBuffer);
-            _computeShader.SetBuffer(kernelIndex, "_VertexBuffer", _vertexBuffer);
-            _computeShader.SetBuffer(kernelIndex, "_UVBuffer", _uvBuffer);
-            _computeShader.SetBuffer(kernelIndex, "_TriangleAppendBuffer", _triangleBuffer);
-            _computeShader.SetBuffer(kernelIndex, "_AccumulatedErrorBuffer", _accumulatedErrorBuffer);
-            _computeShader.SetTexture(kernelIndex, "_DistanceMap", distanceMap);
+            int kernelIndex = _computeShader.FindKernel(_kernelNameComputeBlockSplits);
+            _computeShader.SetBuffer(kernelIndex, _shaderNameQuadtreeBuffer, _quadtreeBuffer);
+            _computeShader.SetBuffer(kernelIndex, _shaderNameViewXYZBuffer, _viewXYZBuffer);
+            _computeShader.SetBuffer(kernelIndex, _shaderNameVertexBuffer, _vertexBuffer);
+            _computeShader.SetBuffer(kernelIndex, _shaderNameUVBuffer, _uvBuffer);
+            _computeShader.SetBuffer(kernelIndex, _shaderNameTriangleAppendBuffer, _triangleBuffer);
+            _computeShader.SetBuffer(kernelIndex, _shaderNameAccumulatedErrorBuffer, _accumulatedErrorBuffer);
+            _computeShader.SetTexture(kernelIndex, _shaderNameDistanceMap, distanceMap);
             // Iterate on the level of detail, from coarse to fine.
             for(int lod = _quadtreeDepth - 1; lod >= 0; lod--)
             {
-                _computeShader.SetInt("_CurrentLOD", lod);
+                _computeShader.SetInt(_shaderNameCurrentLOD, lod);
                 Vector2 threadGroupXY = GetNumberOfBlocksPerRowAndColumn(lod) / 8f;
                 _computeShader.Dispatch(kernelIndex, Mathf.CeilToInt(threadGroupXY.x), Mathf.CeilToInt(threadGroupXY.y), 1);
             }

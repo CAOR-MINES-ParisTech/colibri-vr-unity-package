@@ -21,6 +21,15 @@ namespace COLIBRIVR.Acquisition
 
 #region CONST_FIELDS
 
+        public const string propertyNameLockSetup = "_lockSetup";
+        public const string propertyNameCameraCount = "_cameraCount";
+        public const string propertyNameCameraPrefab = "_cameraPrefab";
+        public const string propertyNameAcquireDepthData = "_acquireDepthData";
+        public const string propertyNameCopyGlobalMesh = "_copyGlobalMesh";
+        public const string propertyNameSetupType = "_setupType";
+        public const string propertyNameSetupDirection = "_setupDirection";
+        public const string shaderNameIsPrecise = "_IsPrecise";
+
         private const string _colorCallerName = "Source color";
         private const string _depthCallerName = "Source depth";
 
@@ -230,7 +239,7 @@ namespace COLIBRIVR.Acquisition
                     // Encode the depth texture into a color texture, using a colormap suited for visualization.
                     if(_distanceToColorMat == null)
                         _distanceToColorMat = new Material(GeneralToolkit.shaderAcquisitionConvert01ToColor);
-                    _distanceToColorMat.SetInt("_IsPrecise", 0);
+                    _distanceToColorMat.SetInt(shaderNameIsPrecise, 0);
                     GeneralToolkit.CreateRenderTexture(ref _distanceAsColorTexture, cameraParams.pixelResolution, 0, RenderTextureFormat.ARGB32, true, FilterMode.Point, TextureWrapMode.Clamp);
                     Graphics.Blit(_targetDepthTexture, _distanceAsColorTexture, _distanceToColorMat);
                     // Display the texture in the preview window.
@@ -279,7 +288,7 @@ namespace COLIBRIVR.Acquisition
             COLMAPConnector.CreateDirectoryStructureForAcquisition(dataHandler.dataDirectory);
             COLMAPConnector.SaveCamerasInformation(cameraSetup.cameraModels, dataHandler.dataDirectory);
             COLMAPConnector.SaveImagesInformation(cameraSetup.cameraModels, dataHandler.dataDirectory);
-            dataHandler.SaveCOLIBRIAdditionalInformation(cameraSetup);
+            dataHandler.SaveCOLIBRIVRAdditionalInformation(cameraSetup);
         }
 
         /// <summary>
@@ -354,7 +363,7 @@ namespace COLIBRIVR.Acquisition
                 // If depth data is to be acquired, save the scene's depth (encoded as a 3-channel RGB texture) as a file.
                 if(_acquireDepthData)
                 {
-                    _distanceToColorMat.SetInt("_IsPrecise", 1);
+                    _distanceToColorMat.SetInt(shaderNameIsPrecise, 1);
                     Graphics.Blit(_targetDepthTexture, _distanceAsColorTexture, _distanceToColorMat);
                     GeneralToolkit.SaveRenderTextureToPNG(_distanceAsColorTexture, Path.Combine(dataHandler.depthDirectory, imageName));
                 }

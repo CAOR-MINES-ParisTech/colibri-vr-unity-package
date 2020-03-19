@@ -11,6 +11,18 @@ namespace COLIBRIVR
 
     public class Method : MonoBehaviour
     {
+
+#region CONST_FIELDS
+        
+        protected const string _propertyNameMaxBlendAngle = "_maxBlendAngle";
+        protected const string _shaderNameSourceCamIndex = "_SourceCamIndex";
+        protected const string _shaderNameSourceCamPosXYZ = "_SourceCamPosXYZ";
+        protected const string _shaderNameSourceCamCount = "_SourceCamCount";
+        protected const string _shaderNameSourceCamIsOmnidirectional = "_SourceCamIsOmnidirectional";
+        protected const string _shaderNameMaxBlendAngle = "_MaxBlendAngle";
+        protected const string _shaderNameFocalLength = "_FocalLength";
+
+#endregion //CONST_FIELDS
         
 #region FIELDS
 

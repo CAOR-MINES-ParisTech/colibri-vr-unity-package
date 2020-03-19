@@ -187,11 +187,11 @@ namespace COLIBRIVR
         public static void SectionCamera(SerializedObject objectCameraModel)
         {
             objectCameraModel.Update();
-            SerializedProperty propertyIsOmnidirectional = objectCameraModel.FindProperty("isOmnidirectional");
-            SerializedProperty propertyOmnidirectionalPixelResolution = objectCameraModel.FindProperty("_omnidirectionalPixelResolution");
-            SerializedProperty propertyPerspectivePixelResolution = objectCameraModel.FindProperty("_perspectivePixelResolution");
-            SerializedProperty propertyPerspectiveFOV = objectCameraModel.FindProperty("_perspectiveFOV");
-            SerializedProperty propertyDistanceRange = objectCameraModel.FindProperty("distanceRange");
+            SerializedProperty propertyIsOmnidirectional = objectCameraModel.FindProperty(CameraModel.propertyNameIsOmnidirectional);
+            SerializedProperty propertyOmnidirectionalPixelResolution = objectCameraModel.FindProperty(CameraModel.propertyNameOmnidirectionalPixelResolution);
+            SerializedProperty propertyPerspectivePixelResolution = objectCameraModel.FindProperty(CameraModel.propertyNamePerspectivePixelResolution);
+            SerializedProperty propertyPerspectiveFOV = objectCameraModel.FindProperty(CameraModel.propertyNamePerspectiveFOV);
+            SerializedProperty propertyDistanceRange = objectCameraModel.FindProperty(CameraModel.propertyNameDistanceRange);
             bool isOmnidirectional = SubsectionCameraHeader(propertyIsOmnidirectional.boolValue);
             propertyIsOmnidirectional.boolValue = isOmnidirectional;
             if(isOmnidirectional)

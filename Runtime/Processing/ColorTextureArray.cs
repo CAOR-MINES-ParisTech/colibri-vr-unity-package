@@ -19,7 +19,9 @@ namespace COLIBRIVR.Processing
 
 #region CONST_FIELDS
 
+        public const string shaderNameColorData = "_ColorData";
         public const string colorDataAssetName = "ColorTextureArray";
+        public const bool useMipMaps = true;
 
 #endregion //CONST_FIELDS
 
@@ -160,11 +162,11 @@ namespace COLIBRIVR.Processing
                 Vector2Int arrayResolution; int arrayDepth;
                 GetCorrectedPowerOfTwoForImages(cameraSetup.cameraModels, out arrayResolution, out arrayDepth);
                 // Create an empty texture array.
-                colorData = new Texture2DArray (1, 1, 1, TextureFormat.RGBA32, false);
-                GeneralToolkit.CreateTexture2DArray(ref colorData, arrayResolution, arrayDepth, TextureFormat.RGB24, false, FilterMode.Point, TextureWrapMode.Clamp, false);
+                colorData = new Texture2DArray (1, 1, 1, TextureFormat.RGBA32, useMipMaps);
+                GeneralToolkit.CreateTexture2DArray(ref colorData, arrayResolution, arrayDepth, TextureFormat.RGB24, false, FilterMode.Point, TextureWrapMode.Clamp, useMipMaps);
                 // Create an empty texture, with the array's resolution.
                 Texture2D arraySlice = new Texture2D(1, 1);
-                GeneralToolkit.CreateTexture2D(ref arraySlice, arrayResolution, TextureFormat.RGB24, false, FilterMode.Point, TextureWrapMode.Clamp, false);
+                GeneralToolkit.CreateTexture2D(ref arraySlice, arrayResolution, TextureFormat.RGB24, false, FilterMode.Point, TextureWrapMode.Clamp, useMipMaps);
                 // Create an empty texture, in which we will load the set of source images one-by-one.
                 Texture2D loadTex = new Texture2D(1, 1);
                 // Process as many images as possible from the set of source images.
@@ -181,7 +183,7 @@ namespace COLIBRIVR.Processing
                     CameraModel cameraModel = cameraSetup.cameraModels[i];
                     // Load the image into a texture object.
                     string imagePath = Path.Combine(dataHandler.colorDirectory, cameraModel.imageName);
-                    GeneralToolkit.CreateTexture2D(ref loadTex, cameraModel.pixelResolution, TextureFormat.RGB24, false, FilterMode.Point, TextureWrapMode.Clamp, false);
+                    GeneralToolkit.CreateTexture2D(ref loadTex, cameraModel.pixelResolution, TextureFormat.RGB24, false, FilterMode.Point, TextureWrapMode.Clamp, useMipMaps);
                     GeneralToolkit.LoadTexture(imagePath, ref loadTex);
                     // Resize the texture so that it fits the array's resolution.
                     GeneralToolkit.ResizeTexture2D(loadTex, ref arraySlice);

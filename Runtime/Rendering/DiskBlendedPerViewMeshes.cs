@@ -19,6 +19,13 @@ namespace COLIBRIVR.Rendering
     public class DiskBlendedPerViewMeshes : RenderingMethod
     {
 
+#region CONST_FIELDS
+
+        private const string _shaderNameStoredColorTexture = "_StoredColorTexture";
+        private const string _shaderNameStoredDepthTexture = "_StoredDepthTexture";
+
+#endregion //CONST_FIELDS
+
 #region FIELDS
         
         [SerializeField] private Helper_CommandBuffer _helperCommandBuffer;
@@ -76,6 +83,10 @@ namespace COLIBRIVR.Rendering
         public override void InitializeLinks()
         {
             base.InitializeLinks();
+            // Initialize links for the helper methods.
+            _helperCommandBuffer.InitializeLinks();
+            _helperDiskBlending.InitializeLinks();
+            // Define the scene representation methods.
             sceneRepresentationMethods = new ProcessingMethod[] { PMColorTextureArray, PMPerViewMeshesQSTR };
         }
 
@@ -133,15 +144,15 @@ namespace COLIBRIVR.Rendering
             // Create the blending material from the corresponding shader.
             blendingMaterial = new Material(GeneralToolkit.shaderRenderingDiskBlendedPerViewMeshes);
             // Store the color data.
-            blendingMaterial.SetTexture("_ColorData", PMColorTextureArray.colorData);
+            blendingMaterial.SetTexture(ColorTextureArray.shaderNameColorData, PMColorTextureArray.colorData);
             // Create two sets of textures: the target textures (rendered to every frame) and the stored textures (read from every frame).
             Vector2Int displayResolution = GeneralToolkit.GetCurrentDisplayResolution();
             GeneralToolkit.CreateRenderTexture(ref _targetColorTexture, displayResolution, 0, RenderTextureFormat.DefaultHDR, false, FilterMode.Point, TextureWrapMode.Clamp);
             GeneralToolkit.CreateRenderTexture(ref _targetDepthTexture, displayResolution, 24, RenderTextureFormat.Depth, true, FilterMode.Point, TextureWrapMode.Clamp);
             GeneralToolkit.CreateRenderTexture(ref _storedColorTexture, displayResolution, 0, RenderTextureFormat.DefaultHDR, false, FilterMode.Point, TextureWrapMode.Clamp);
             GeneralToolkit.CreateRenderTexture(ref _storedDepthTexture, displayResolution, 24, RenderTextureFormat.RFloat, true, FilterMode.Point, TextureWrapMode.Clamp);
-			blendingMaterial.SetTexture("_StoredColorTexture", _storedColorTexture);
-			blendingMaterial.SetTexture("_StoredDepthTexture", _storedDepthTexture);
+			blendingMaterial.SetTexture(_shaderNameStoredColorTexture, _storedColorTexture);
+			blendingMaterial.SetTexture(_shaderNameStoredDepthTexture, _storedDepthTexture);
         }
         
         /// <summary>
@@ -171,8 +182,9 @@ namespace COLIBRIVR.Rendering
             for(int i = 0; i < PMPerViewMeshesQSTR.perViewMeshTransforms.Length; i++)
             {
                 // Indicate the camera's index and position.
-                properties.SetFloat("_SourceCamIndex", sourceCamIndices[i]);
-                properties.SetVector("_SourceCamPosXYZ", sourceCamPositions[i]);
+                properties.SetFloat(_shaderNameSourceCamIndex, sourceCamIndices[i]);
+                properties.SetVector(_shaderNameSourceCamPosXYZ, sourceCamPositions[i]);
+                properties.SetFloat(_shaderNameSourceCamIsOmnidirectional, cameraSetup.cameraModels[i].isOmnidirectional ? 1 : 0);
                 // Draw the mesh into the target textures' color and depth buffers.
                 _helperCommandBuffer.commandBuffer.SetRenderTarget(color: _targetColorTexture, depth: _targetDepthTexture);
                 _helperCommandBuffer.commandBuffer.DrawMesh(PMPerViewMeshesQSTR.perViewMeshes[i], transformationMatrices[i], blendingMaterial, 0, 0, properties);

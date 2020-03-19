@@ -27,6 +27,8 @@ namespace COLIBRIVR.Processing
         public const int indexGlobalTextureMap = 6;
         public const int indexPerViewMeshesQSTRDTA = 7;
 
+        private const string _propertyNameShouldExecute = "shouldExecute";
+
 #endregion //CONST_FIELDS
 
 #region STATIC_PROPERTIES
@@ -153,7 +155,7 @@ namespace COLIBRIVR.Processing
         {
             SerializedObject serializedObject = new SerializedObject(this);
             serializedObject.Update();
-            SerializedProperty propertyShouldExecute = serializedObject.FindProperty("shouldExecute");
+            SerializedProperty propertyShouldExecute = serializedObject.FindProperty(_propertyNameShouldExecute);
             GeneralToolkit.EditorWordWrapLeftToggle(GetGUIInfo(), propertyShouldExecute);
             propertyShouldExecute.boolValue = propertyShouldExecute.boolValue && isCompatible;
             bool outIsSelected = propertyShouldExecute.boolValue;

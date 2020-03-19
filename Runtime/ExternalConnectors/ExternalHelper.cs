@@ -19,6 +19,8 @@ namespace COLIBRIVR.ExternalConnectors
 
         public const string EHTransformName = "ExternalHelpers";
 
+        private const string _propertyNameFoldout = "_foldout";
+
 #endregion //CONST_FIELDS
 
 #region STATIC_PROPERTIES
@@ -52,19 +54,6 @@ namespace COLIBRIVR.ExternalConnectors
                 methods[iter].Reset();
             return methods;
         }
-
-        // /// <summary>
-        // /// Creates or resets an external helper object as a child of the given transform.
-        // /// </summary>
-        // /// <param name="parentTransform"></param> The parent transform.
-        // /// <typeparam name="T"></typeparam> The type of helper object to create.
-        // /// /// <returns></returns> The external helper object.
-        // public static T CreateOrResetHelper<T>(Transform parentTransform = null) where T : ExternalHelper
-        // {
-        //     T existingHelper = GeneralToolkit.GetOrCreateChildComponent<T>(parentTransform);
-        //     existingHelper.Reset();
-        //     return existingHelper;
-        // }
 
 #endregion //STATIC_METHODS
 
@@ -111,7 +100,7 @@ namespace COLIBRIVR.ExternalConnectors
                 return;
             SerializedObject serializedObject = new SerializedObject(this);
             serializedObject.Update();
-            SerializedProperty propertyFoldout = serializedObject.FindProperty("_foldout");
+            SerializedProperty propertyFoldout = serializedObject.FindProperty(_propertyNameFoldout);
             using (var verticalScope = new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
             {
                 string label = settings.toolkitName;

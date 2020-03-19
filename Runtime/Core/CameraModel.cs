@@ -16,6 +16,16 @@ namespace COLIBRIVR
     public class CameraModel : MonoBehaviour
     {
 
+#region CONST_FIELDS
+
+        public const string propertyNameIsOmnidirectional = "isOmnidirectional";
+        public const string propertyNameOmnidirectionalPixelResolution = "_omnidirectionalPixelResolution";
+        public const string propertyNamePerspectivePixelResolution = "_perspectivePixelResolution";
+        public const string propertyNamePerspectiveFOV = "_perspectiveFOV";
+        public const string propertyNameDistanceRange = "distanceRange";
+
+#endregion //CONST_FIELDS
+
 #region STATIC_PROPERTIES
 
         public static Color baseColor { get { return Color.cyan; } }

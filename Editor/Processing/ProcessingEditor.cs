@@ -20,17 +20,34 @@ namespace COLIBRIVR.Processing
     public class ProcessingEditor : Editor
     {
 
-#region STATIC_METHODS
-        
+#region STATIC_METHODS        
+
+        /// <summary>
+        /// Enables the user to select the source data directory.
+        /// </summary>
+        /// <param name="targetObject"></param> The target processing object.
+        public static void SectionDataDirectory(Processing targetObject)
+        {
+            bool isGUIEnabled = GUI.enabled;
+            GUI.enabled = isGUIEnabled && !Application.isPlaying;
+            EditorGUILayout.LabelField(targetObject.sourceDataInfo, GeneralToolkit.wordWrapStyle, GUILayout.MaxWidth(GeneralToolkit.EditorGetCurrentScopeWidth()));
+            using(var verticalScope = new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+            {
+                string searchTitle = "Select directory that contains color/depth data";
+                string tooltip = "Select the base directory where the acquisition data was stored.";
+                bool clicked;
+                string outPath;
+                GeneralToolkit.EditorPathSearch(out clicked, out outPath, PathType.Directory, targetObject.dataHandler.dataDirectory, searchTitle, tooltip, Color.grey);
+                targetObject.dataHandler.ChangeDataDirectory(outPath, clicked);
+            }
+            GUI.enabled = isGUIEnabled;
+        }
 
 #endregion //STATIC_METHODS
 
 #region FIELDS
 
         private Processing _targetObject;
-        private SerializedProperty _propertyColorProcessingMethodIndex;
-        private SerializedProperty _propertyPerViewGeometryProcessingMethodIndex;
-        private SerializedProperty _propertyGlobalGeometryProcessingMethodIndex;
 
 #endregion //FIELDS
 
@@ -44,10 +61,6 @@ namespace COLIBRIVR.Processing
             // Inform the target object that it has been selected.
             _targetObject = (Processing)serializedObject.targetObject;
             _targetObject.Selected();
-            // Get the target properties.
-            _propertyColorProcessingMethodIndex = serializedObject.FindProperty("_colorProcessingMethodIndex");
-            _propertyPerViewGeometryProcessingMethodIndex = serializedObject.FindProperty("_perViewGeometryProcessingMethodIndex");
-            _propertyGlobalGeometryProcessingMethodIndex = serializedObject.FindProperty("_globalGeometryProcessingMethodIndex");
         }
 
         /// <summary>
@@ -87,7 +100,7 @@ namespace COLIBRIVR.Processing
             
             // Enable the user to select the source data directory.
             GeneralToolkit.EditorNewSection("Source data");
-            SectionDataDirectory();
+            SectionDataDirectory(_targetObject);
 
             // Enable the user to perform 3D reconstruction and simplification using external tools.
             GeneralToolkit.EditorNewSection("External processing helpers");
@@ -105,26 +118,6 @@ namespace COLIBRIVR.Processing
 #endregion //INHERITANCE_METHODS
 
 #region METHODS
-
-        /// <summary>
-        /// Enables the user to select the source data directory.
-        /// </summary>
-        private void SectionDataDirectory()
-        {
-            bool isGUIEnabled = GUI.enabled;
-            GUI.enabled = isGUIEnabled && !Application.isPlaying;
-            EditorGUILayout.LabelField(_targetObject.sourceDataInfo, GeneralToolkit.wordWrapStyle, GUILayout.MaxWidth(GeneralToolkit.EditorGetCurrentScopeWidth()));
-            using(var verticalScope = new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
-            {
-                string searchTitle = "Select directory that contains color/depth data";
-                string tooltip = "Select the base directory where the acquisition data was stored.";
-                bool clicked;
-                string outPath;
-                GeneralToolkit.EditorPathSearch(out clicked, out outPath, PathType.Directory, _targetObject.dataHandler.dataDirectory, searchTitle, tooltip, Color.grey);
-                _targetObject.dataHandler.ChangeDataDirectory(outPath, clicked);
-            }
-            GUI.enabled = isGUIEnabled;
-        }
 
         /// <summary>
         /// Enables the user to enhance the source data (e.g. with reconstructed geometry) using external tools.

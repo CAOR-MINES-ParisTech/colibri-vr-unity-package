@@ -69,6 +69,9 @@ namespace COLIBRIVR.Rendering
         public override void InitializeLinks()
         {
             base.InitializeLinks();
+            // Initialize links for the helper methods.
+            _helperFocalSurfaces.InitializeLinks();
+            // Define the scene representation methods.
             sceneRepresentationMethods = new ProcessingMethod[] { PMColorTextureArray, PMPerViewMeshesFS };
         }
 
@@ -128,7 +131,7 @@ namespace COLIBRIVR.Rendering
             // Because many focal surfaces use the same mesh, enable instancing.
             blendingMaterial.enableInstancing = true;
             // Store the color data.
-            blendingMaterial.SetTexture("_ColorTexArray", PMColorTextureArray.colorData);
+            blendingMaterial.SetTexture(ColorTextureArray.shaderNameColorData, PMColorTextureArray.colorData);
         }
 
         /// <summary>
@@ -141,7 +144,7 @@ namespace COLIBRIVR.Rendering
             {
                 MeshRenderer meshRenderer = PMPerViewMeshesFS.meshTransforms[sourceCamIndex].gameObject.AddComponent<MeshRenderer>();
                 meshRenderer.material = blendingMaterial;
-                properties.SetFloat("_SourceCamIndex", sourceCamIndex);
+                properties.SetFloat(_shaderNameSourceCamIndex, sourceCamIndex);
                 meshRenderer.SetPropertyBlock(properties);
             }
         }

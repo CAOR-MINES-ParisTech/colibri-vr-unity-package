@@ -21,6 +21,8 @@ namespace COLIBRIVR.Rendering
 
         public const string RMTransformName = "RenderingMethods";
 
+        private const string _shaderNameExcludedSourceView = "_ExcludedSourceView";
+
 #endregion //CONST_FIELDS
 
 #region STATIC_PROPERTIES
@@ -34,6 +36,7 @@ namespace COLIBRIVR.Rendering
                     typeof(RenderingMethodTemplate),
                     typeof(TexturedFocalSurfaces),
                     typeof(TexturedPerViewMeshes),
+                    typeof(TexturedPerViewMeshesDT),
                     typeof(TexturedGlobalMesh),
                     typeof(DiskBlendedFocalSurfaces),
                     typeof(DiskBlendedPerViewMeshes),
@@ -129,7 +132,7 @@ namespace COLIBRIVR.Rendering
         public void ExcludeSourceView(int excludedSourceView)
         {
             if(blendingMaterial != null)
-                blendingMaterial.SetInt("_ExcludedSourceView", excludedSourceView);
+                blendingMaterial.SetInt(_shaderNameExcludedSourceView, excludedSourceView);
         }
 
         /// <summary>

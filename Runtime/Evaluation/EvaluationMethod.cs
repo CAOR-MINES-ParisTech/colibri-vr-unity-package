@@ -18,6 +18,12 @@ namespace COLIBRIVR.Evaluation
 #region CONST_FIELDS
 
         public const string EMTransformName = "EvaluationMethods";
+        public const string shaderNameTextureOne = "_TextureOne";
+        public const string shaderNameTextureTwo = "_TextureTwo";
+
+        private const string _propertyNameExcludeSourceView = "excludeSourceView";
+        private const string _propertyNameMultFactor = "_multFactor";
+        private const string _shaderNameMultFactor = "_MultFactor";
 
 #endregion //CONST_FIELDS
 
@@ -68,7 +74,7 @@ namespace COLIBRIVR.Evaluation
         public abstract GUIContent GetGUIInfo();
 
         /// <inheritdoc/>
-        public bool HasAdditionalParameters()
+        public virtual bool HasAdditionalParameters()
         {
             return true;
         }
@@ -82,13 +88,13 @@ namespace COLIBRIVR.Evaluation
             // This is important to properly evaluate a rendering solution.
             string label = "Exclude source:";
             string tooltip = "For evaluation, exclude source view when rendering at its viewpoint.";
-            SerializedProperty propertyExcludeSourceView = serializedObject.FindProperty("excludeSourceView");
+            SerializedProperty propertyExcludeSourceView = serializedObject.FindProperty(_propertyNameExcludeSourceView);
             propertyExcludeSourceView.boolValue = EditorGUILayout.Toggle(new GUIContent(label, tooltip), propertyExcludeSourceView.boolValue);
             // Enable the user to choose a multiplication factor for the computed error.
             // This is simply for visualization purposes.
             label = "Mult. factor:";
             tooltip = "Multiplication factor for the computed evaluation error.";
-            SerializedProperty propertyMultFactor = serializedObject.FindProperty("_multFactor");
+            SerializedProperty propertyMultFactor = serializedObject.FindProperty(_propertyNameMultFactor);
             propertyMultFactor.floatValue = EditorGUILayout.Slider(new GUIContent(label, tooltip), propertyMultFactor.floatValue, 0.01f, 100);
             serializedObject.ApplyModifiedProperties();
         }
@@ -128,7 +134,7 @@ namespace COLIBRIVR.Evaluation
         public virtual void UpdateEvaluationMethod()
         {
             if(evaluationMaterial != null)
-                evaluationMaterial.SetFloat("_MultFactor", _multFactor);
+                evaluationMaterial.SetFloat(_shaderNameMultFactor, _multFactor);
         }
 
 #endregion //INHERITANCE_METHODS

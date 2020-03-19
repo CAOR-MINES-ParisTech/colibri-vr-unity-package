@@ -184,40 +184,7 @@ namespace COLIBRIVR.Processing
             Graphics.Blit(_previewSourceImagesLoader.colorData, previewSourceTexture, _lastLoadedPreviewIndex, 0);
             int previewMaxIndex = cameraSetup.cameraModels.Length - 1;
             PreviewWindow.DisplayImage(_sourceCallerName, previewSourceTexture, previewMaxIndex);
-            // // Check that there are camera models, that the application is playing, and that the object is active.
-            // if(cameraSetup.cameraModels == null || !Application.isPlaying || !gameObject.activeInHierarchy)
-            //     return;
-            // // Check that the image to load is not the one already loaded.
-            // CameraModel cameraModel = cameraSetup.cameraModels[cameraSetup.previewIndex];
-            // string pathToLoad = Path.Combine(dataHandler.colorDirectory, cameraModel.imageName);
-            // if(pathToLoad == _lastLoadedImagePath)
-            //     return;
-            // // Display the corresponding color image.
-            // _lastLoadedImagePath = pathToLoad;
-            // StartCoroutine(LoadSourceImageAsPreviewCoroutine());
         }
-
-        // /// <summary>
-        // /// Coroutine that loads the source image as preview.
-        // /// </summary>
-        // /// <returns></returns>
-        // private IEnumerator LoadSourceImageAsPreviewCoroutine()
-        // {
-        //     Texture2D[] loadedTextureRef = new Texture2D[1];
-        //     yield return StartCoroutine(GeneralToolkit.LoadTextureAsync(_lastLoadedImagePath, loadedTextureRef));
-        //     if(loadedTextureRef[0] != null)
-        //     {
-        //         if(_previewSourceTexture != null)
-        //             DestroyImmediate(_previewSourceTexture);
-        //         GeneralToolkit.CreateRenderTexture(ref _previewSourceTexture, new Vector2Int(loadedTextureRef[0].width, loadedTextureRef[0].height));
-        //         Graphics.Blit(loadedTextureRef[0], _previewSourceTexture);
-        //         RenderTexture.active = null;
-        //         DestroyImmediate(loadedTextureRef[0]);
-        //         _previewSourceTexture.hideFlags = HideFlags.DontSaveInEditor;
-        //         int previewMaxIndex = cameraSetup.cameraModels.Length - 1;
-        //         PreviewWindow.DisplayImage(_sourceCallerName, _previewSourceTexture, previewMaxIndex);
-        //     }
-        // }
 
         /// <summary>
         /// Launches the coroutine that processes data.
@@ -329,11 +296,11 @@ namespace COLIBRIVR.Processing
 #if UNITY_EDITOR
                     // If needed, provide default parameters for the additional source data information.
                     if(!File.Exists(dataHandler.additionalInfoFile))
-                        dataHandler.SaveCOLIBRIAdditionalInformation(cameraSetup);
+                        dataHandler.SaveCOLIBRIVRAdditionalInformation(cameraSetup);
 #endif //UNITY_EDITOR
                     // Read the additional information, and store it in the camera setup.
                     if(File.Exists(dataHandler.additionalInfoFile))
-                        dataHandler.ReadCOLIBRIAdditionalInformation(cameraSetup);
+                        dataHandler.ReadCOLIBRIVRAdditionalInformation(cameraSetup);
 #if UNITY_EDITOR
                     // Update the gizmo size.
                     cameraSetup.gizmoSize = CameraSetup.ComputeGizmoSize(cameraSetup.cameraModels);

@@ -40,10 +40,10 @@ namespace COLIBRIVR.Rendering
         {
             _targetObject = (Rendering)serializedObject.targetObject;
             // Get the target properties.
-            _propertyLaunchOrderIndex = serializedObject.FindProperty("launchOrderIndex");
-            _propertyLaunchOnAwake = serializedObject.FindProperty("_launchOnAwake");
-            _propertyRenderingMethodIndex = serializedObject.FindProperty("_renderingMethodIndex");
-            _propertyEvaluationMethodIndex = serializedObject.FindProperty("_evaluationMethodIndex");
+            _propertyLaunchOrderIndex = serializedObject.FindProperty(Rendering.propertyNameLaunchOrderIndex);
+            _propertyLaunchOnAwake = serializedObject.FindProperty(Rendering.propertyNameLaunchOnAwake);
+            _propertyRenderingMethodIndex = serializedObject.FindProperty(Rendering.propertyNameRenderingMethodIndex);
+            _propertyEvaluationMethodIndex = serializedObject.FindProperty(Rendering.propertyNameEvaluationMethodIndex);
         }
 
         /// <summary>

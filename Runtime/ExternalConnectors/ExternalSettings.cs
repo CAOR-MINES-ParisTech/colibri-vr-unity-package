@@ -19,6 +19,9 @@ namespace COLIBRIVR.ExternalConnectors
 
         public const string defaultExePath = "No path specified.";
 
+        private const string _propertyNameFoldout = "foldout";
+        private const string _propertyNameExePath = "exePath";
+
 #endregion //CONST_FIELDS
 
 #region STATIC_PROPERTIES
@@ -82,8 +85,8 @@ namespace COLIBRIVR.ExternalConnectors
         {
             SerializedObject serializedObject = new SerializedObject(this);
             serializedObject.Update();
-            SerializedProperty propertyFoldout = serializedObject.FindProperty("foldout");
-            SerializedProperty propertyExePath = serializedObject.FindProperty("exePath");
+            SerializedProperty propertyFoldout = serializedObject.FindProperty(_propertyNameFoldout);
+            SerializedProperty propertyExePath = serializedObject.FindProperty(_propertyNameExePath);
             using (var verticalScope = new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
             {
                 string label = toolkitName;

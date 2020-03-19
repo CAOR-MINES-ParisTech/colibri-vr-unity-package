@@ -110,6 +110,14 @@
         return texUV;
     }
 
+    /// <summary>
+    /// For an omnidirectional camera: projects the given texture UV to form an equirectangular image at Z=0.
+    /// </summary>
+    inline float3 Omnidirectional_ProjectAsEquirectangular(float2 texUV)
+    {
+        return float3(float2(2.0, 1.0) * texUV, 0);
+    }
+
 /// ENDOMNIDIRECTIONALMETHODS
 
 /// GENERALMETHODS

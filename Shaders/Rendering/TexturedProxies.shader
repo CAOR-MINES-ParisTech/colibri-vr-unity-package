@@ -12,7 +12,7 @@ Shader "COLIBRIVR/Rendering/TexturedProxies"
 {
     Properties
     {
-        _ColorTexArray ("Color texture array", 2DArray) = "white" {}
+        _ColorData ("Color data", 2DArray) = "white" {}
         [PerRendererData] _SourceCamIndex ("Source camera index", int) = 0
     }
     SubShader
@@ -45,7 +45,7 @@ Shader "COLIBRIVR/Rendering/TexturedProxies"
     /// ENDSTRUCTS
 
     /// PROPERTIES
-            UNITY_DECLARE_TEX2DARRAY(_ColorTexArray);
+            UNITY_DECLARE_TEX2DARRAY(_ColorData);
             UNITY_INSTANCING_BUFFER_START(InstanceProperties)
                 UNITY_DEFINE_INSTANCED_PROP(int, _SourceCamIndex)
             UNITY_INSTANCING_BUFFER_END(InstanceProperties)
@@ -67,7 +67,7 @@ Shader "COLIBRIVR/Rendering/TexturedProxies"
             base_fOUT unlitTex_frag (unlitTex_v2f i)
             {
                 base_fOUT o;
-                o.color = fixed4(UNITY_SAMPLE_TEX2DARRAY(_ColorTexArray, i.texArrayUVZ).rgb, 1);
+                o.color = fixed4(UNITY_SAMPLE_TEX2DARRAY(_ColorData, i.texArrayUVZ).rgb, 1);
                 return o;
             }
     /// ENDFRAGMENT

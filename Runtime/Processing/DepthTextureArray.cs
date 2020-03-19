@@ -21,6 +21,7 @@ namespace COLIBRIVR.Processing
 #region CONST_FIELDS
 
         public const string depthMapsAssetName = "DepthMapsTextureArray";
+        public const string shaderNameDepthData = "_DepthData";
 
 #endregion //CONST_FIELDS
 

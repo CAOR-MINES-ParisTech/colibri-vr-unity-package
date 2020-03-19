@@ -16,6 +16,13 @@ namespace COLIBRIVR.Rendering
     public class Helper_DiskBlending : Method
     {
 
+#region CONST_FIELDS
+
+        private const string _propertyNameClipNullValues = "_clipNullValues";
+        private const string _shaderNameClipNullValues = "_ClipNullValues";
+
+#endregion //CONST_FIELDS
+
 #region FIELDS
 
         [SerializeField] private float _maxBlendAngle;
@@ -48,12 +55,12 @@ namespace COLIBRIVR.Rendering
             // Enable the user to choose the maximum blending angle.
             string label = "Max. blend angle:";
             string tooltip = "Maximum angle difference (degrees) between source ray and view ray for the color value to be blended.";
-            SerializedProperty propertyMaxBlendAngle= serializedObject.FindProperty("_maxBlendAngle");
+            SerializedProperty propertyMaxBlendAngle= serializedObject.FindProperty(_propertyNameMaxBlendAngle);
             propertyMaxBlendAngle.floatValue = EditorGUILayout.Slider(new GUIContent(label, tooltip), propertyMaxBlendAngle.floatValue, 1f, 180f);
             // Enable the user to choose whether null values should be clipped or displayed as black.
             label = "Clip null values:";
             tooltip = "Whether to clip null values or display them as black.";
-            SerializedProperty propertyClipNullValues = serializedObject.FindProperty("_clipNullValues");
+            SerializedProperty propertyClipNullValues = serializedObject.FindProperty(_propertyNameClipNullValues);
             propertyClipNullValues.boolValue = EditorGUILayout.Toggle(new GUIContent(label, tooltip), propertyClipNullValues.boolValue);
         }
 
@@ -70,9 +77,9 @@ namespace COLIBRIVR.Rendering
         public void UpdateBlendingParameters(ref Material blendingMaterial, CameraModel[] cameraModels, out List<float> sourceCamIndices, out List<Vector4> sourceCamPositions, out List<Matrix4x4> transformationMatrices)
         {
             // Set parameters for the blending material.
-            blendingMaterial.SetInt("_SourceCamCount", cameraModels.Length);
-            blendingMaterial.SetFloat("_MaxBlendAngle", _maxBlendAngle);
-            blendingMaterial.SetInt("_ClipNullValues", _clipNullValues ? 1 : 0);
+            blendingMaterial.SetInt(_shaderNameSourceCamCount, cameraModels.Length);
+            blendingMaterial.SetFloat(_shaderNameMaxBlendAngle, _maxBlendAngle);
+            blendingMaterial.SetInt(_shaderNameClipNullValues, _clipNullValues ? 1 : 0);
             // Determine additional camera parameters to pass to the material as properties.
             sourceCamIndices = new List<float>();
             sourceCamPositions = new List<Vector4>();
