@@ -244,7 +244,7 @@ namespace COLIBRIVR
                     string[] split = line.Split(' ');
                     if(split.Length > 2)
                     {
-                        Vector3 newInitialViewingPosition = new Vector3(float.Parse(split[0]), float.Parse(split[1]), float.Parse(split[2]));
+                        Vector3 newInitialViewingPosition = new Vector3(GeneralToolkit.ParseFloat(split[0]), GeneralToolkit.ParseFloat(split[1]), GeneralToolkit.ParseFloat(split[2]));
                         cameraSetup.SetAdditionalParameters(newInitialViewingPosition);
                     }
                 }
