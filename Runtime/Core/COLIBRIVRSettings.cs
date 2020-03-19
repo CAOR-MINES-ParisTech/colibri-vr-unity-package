@@ -61,8 +61,7 @@ namespace COLIBRIVR
         /// <returns></returns> The package settings.
         private static COLIBRIVRSettings GetOrCreateSettings()
         {
-            string packagePathRelative = PackageReference.GetPackagePath(true);
-            string settingsAssetPath = Path.Combine(Path.Combine(Path.Combine(packagePathRelative, "Editor"), "Core"), "COLIBRIVRSettings.asset");
+            string settingsAssetPath = Path.Combine("Assets", "COLIBRIVRSettings.asset");
             COLIBRIVRSettings settings = AssetDatabase.LoadAssetAtPath<COLIBRIVRSettings>(settingsAssetPath);
             if (settings == null)
             {
