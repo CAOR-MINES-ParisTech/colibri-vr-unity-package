@@ -18,6 +18,7 @@ namespace COLIBRIVR
 
 #region CONST_FIELDS
 
+        private const string _settingsFolderName = "COLIBRI VR";
         private const string _propertyNamePreviewMaxResolution = "previewMaxResolution";
 
 #endregion //CONST_FIELDS
@@ -27,6 +28,8 @@ namespace COLIBRIVR
 #region STATIC_PROPERTIES
 
         public static COLIBRIVRSettings packageSettings { get { return GetOrCreateSettings(); } }
+        public static string settingsFolderAbsolutePath { get { return Path.Combine(Path.GetFullPath(Application.dataPath), _settingsFolderName); } }
+        public static string settingsResourcesAbsolutePath { get { return Path.Combine(settingsFolderAbsolutePath, "Resources"); } }
 
 #endregion //STATIC_PROPERTIES
 
@@ -61,7 +64,11 @@ namespace COLIBRIVR
         /// <returns></returns> The package settings.
         private static COLIBRIVRSettings GetOrCreateSettings()
         {
-            string settingsAssetPath = Path.Combine("Assets", "COLIBRIVRSettings.asset");
+            if(!Directory.Exists(settingsFolderAbsolutePath))
+                GeneralToolkit.CreateOrClear(PathType.Directory, settingsFolderAbsolutePath);
+            if(!Directory.Exists(settingsResourcesAbsolutePath))
+                GeneralToolkit.CreateOrClear(PathType.Directory, settingsResourcesAbsolutePath);
+            string settingsAssetPath = Path.Combine(GeneralToolkit.ToRelativePath(COLIBRIVRSettings.settingsFolderAbsolutePath), "COLIBRIVRSettings.asset");
             COLIBRIVRSettings settings = AssetDatabase.LoadAssetAtPath<COLIBRIVRSettings>(settingsAssetPath);
             if (settings == null)
             {

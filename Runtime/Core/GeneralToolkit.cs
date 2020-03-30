@@ -496,8 +496,8 @@ namespace COLIBRIVR
 
         private static string _tempDirectoryName = "COLIBRIVRTempDirectory";
 
-        public static string tempDirectoryRelativePath { get{ return Path.Combine(PackageReference.GetPackagePath(true), _tempDirectoryName); } }
-        public static string tempDirectoryAbsolutePath { get{ return Path.Combine(PackageReference.GetPackagePath(false), _tempDirectoryName); } }
+        public static string tempDirectoryRelativePath { get{ return Path.Combine(ToRelativePath(COLIBRIVRSettings.settingsFolderAbsolutePath), _tempDirectoryName); } }
+        public static string tempDirectoryAbsolutePath { get{ return Path.Combine(COLIBRIVRSettings.settingsFolderAbsolutePath, _tempDirectoryName); } }
 
         /// <summary>
         /// Returns an array containing the names of files at the given path that have one of the given extensions.
@@ -585,8 +585,8 @@ namespace COLIBRIVR
         {
             // The path can only be deleted if it is in the Unity project.
             bool pathNotInProject = !path.StartsWith(GetProjectDirectoryPath());
-            // If it is in the Assets folder, it must also be in a temporary folder to be deleted.
-            bool pathInAssetsButNotTemp = path.Contains(Path.GetFullPath(Application.dataPath)) && !path.Contains(_tempDirectoryName);
+            // If it is in the Assets folder, it must also be in a temporary folder to be deleted (the settings folder is considered a temp folder).
+            bool pathInAssetsButNotTemp = path.Contains(Path.GetFullPath(Application.dataPath)) && !path.Contains(_tempDirectoryName) && !path.StartsWith(COLIBRIVRSettings.settingsFolderAbsolutePath);
             // If neither of these conditions is verified, return an error message.
             if(pathNotInProject || pathInAssetsButNotTemp)
             {
