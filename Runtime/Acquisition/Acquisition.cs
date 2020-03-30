@@ -183,9 +183,9 @@ namespace COLIBRIVR.Acquisition
             {
                 cameraSetup.ChangeCameraCount(_cameraCount.x * _cameraCount.y);
                 if(_setupType == SetupType.Grid)
-                    cameraSetup.ComputeGridPoses(_cameraCount);
+                    cameraSetup.ComputeGridPoses(transform, _cameraCount);
                 else
-                    cameraSetup.ComputeSpherePoses(_cameraCount, _setupDirection);
+                    cameraSetup.ComputeSpherePoses(transform, _cameraCount, _setupDirection);
             }
         }
 

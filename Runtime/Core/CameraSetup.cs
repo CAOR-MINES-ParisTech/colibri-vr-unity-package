@@ -377,12 +377,13 @@ namespace COLIBRIVR
         /// <summary>
         /// Computes camera poses on a grid.
         /// </summary>
+        /// <param name="parentTransform"></param> The parent transform.
         /// <param name="cameraCount"></param> The number of cameras on each of the axes of the grid.
-        public void ComputeGridPoses(Vector2Int cameraCount)
+        public void ComputeGridPoses(Transform parentTransform, Vector2Int cameraCount)
         {
             // Compute several preliminary values. 
             Vector2 numberOfIntervals = cameraCount - Vector2.one;
-            Vector2 intervalSize = new Vector2(transform.localScale.x / Mathf.Max(1, numberOfIntervals.x), transform.localScale.y / Mathf.Max(1, numberOfIntervals.y));
+            Vector2 intervalSize = new Vector2(parentTransform.lossyScale.x / Mathf.Max(1, numberOfIntervals.x), parentTransform.lossyScale.y / Mathf.Max(1, numberOfIntervals.y));
             // Update the camera model of all source cameras.
             for(int j = 0; j < cameraCount.y; j++)
             {
@@ -392,14 +393,14 @@ namespace COLIBRIVR
                     CameraModel cameraModel = cameraModels[index];
                     cameraModel.SetCameraReferenceIndexAndImageName(index, index.ToString("0000") + ".png");
                     Vector2 planePos = (new Vector2(i, j) - 0.5f * numberOfIntervals) * intervalSize;
-                    cameraModel.transform.position = transform.position + planePos.x * transform.right + planePos.y * transform.up;
-                    cameraModel.transform.rotation = transform.rotation;
+                    cameraModel.transform.position = parentTransform.position + planePos.x * parentTransform.right + planePos.y * parentTransform.up;
+                    cameraModel.transform.rotation = parentTransform.rotation;
                 }
             }
             // Set the initial viewing position so that the viewer will initially look at the center of the grid.
-            Vector2 absScale = new Vector2(Mathf.Abs(transform.localScale.x), Mathf.Abs(transform.localScale.y));
+            Vector2 absScale = new Vector2(Mathf.Abs(parentTransform.lossyScale.x), Mathf.Abs(parentTransform.lossyScale.y));
             float largestDim = Mathf.Max(absScale.x, absScale.y);
-            initialViewingPosition = transform.position - 0.5f * largestDim * transform.forward;
+            initialViewingPosition = parentTransform.position - 0.5f * largestDim * parentTransform.forward;
             // Compute inter-camera distance factor (here: minimum inter-camera distance).
             float interCamDistanceFactor = Mathf.Min(intervalSize.x, intervalSize.y);
 #if UNITY_EDITOR
@@ -412,15 +413,16 @@ namespace COLIBRIVR
         /// <summary>
         /// Computes camera poses on a sphere.
         /// </summary>
+        /// <param name="parentTransform"></param> The parent transform.
         /// <param name="cameraCount"></param> The number of cameras on each of the arcs of the sphere.
         /// <param name="setupDirection"></param> The direction of the sphere setup, inward or outward.
-        public void ComputeSpherePoses(Vector2Int cameraCount, SetupDirection setupDirection)
+        public void ComputeSpherePoses(Transform parentTransform, Vector2Int cameraCount, SetupDirection setupDirection)
         {
             // Compute several preliminary values. 
             Vector2 intervalArcDistance = Vector2.one / cameraCount;
             Vector2 degreesPerIteration = new Vector2(360f, 180f) * intervalArcDistance;
             int facingDirection = (setupDirection == SetupDirection.Outwards) ? 1 : -1;
-            Vector3 absScale = new Vector3(Mathf.Abs(transform.localScale.x), Mathf.Abs(transform.localScale.y), Mathf.Abs(transform.localScale.z));
+            Vector3 absScale = new Vector3(Mathf.Abs(parentTransform.lossyScale.x), Mathf.Abs(parentTransform.lossyScale.y), Mathf.Abs(parentTransform.lossyScale.z));
             // Update the camera model of all source cameras.
             for(int j = 0; j < cameraCount.y; j++)
             {
@@ -429,12 +431,12 @@ namespace COLIBRIVR
                     int index = j * cameraCount.x + i;
                     CameraModel cameraModel = cameraModels[index];
                     cameraModel.SetCameraReferenceIndexAndImageName(index, index.ToString("0000") + ".png");
-                    cameraModel.transform.rotation = Quaternion.AngleAxis(i * degreesPerIteration.x, -transform.up) * Quaternion.AngleAxis(-90f + (j + 0.5f) * degreesPerIteration.y, -transform.right) * transform.rotation;
-                    cameraModel.transform.position = transform.position + Vector3.Scale(cameraModels[index].transform.rotation * Vector3.forward, facingDirection * absScale);
+                    cameraModel.transform.rotation = Quaternion.AngleAxis(i * degreesPerIteration.x, -parentTransform.up) * Quaternion.AngleAxis(-90f + (j + 0.5f) * degreesPerIteration.y, -parentTransform.right) * parentTransform.rotation;
+                    cameraModel.transform.position = parentTransform.position + Vector3.Scale(cameraModels[index].transform.rotation * Vector3.forward, facingDirection * absScale);
                 }
             }
             // Set the initial viewing position so that the viewer will look outwards from within, or inwards from without, based on the specified setup direction.
-            initialViewingPosition = (facingDirection == 1) ? transform.position : transform.position - 1.5f * transform.localScale.magnitude * transform.forward;
+            initialViewingPosition = (facingDirection == 1) ? parentTransform.position : parentTransform.position - 1.5f * parentTransform.localScale.magnitude * parentTransform.forward;
             // Compute the inter-camera distance factor (here: minimum inter-camera distance).
             float interCamDistanceFactor = 1f;
             int totalCameraCount = cameraCount.x * cameraCount.y;
