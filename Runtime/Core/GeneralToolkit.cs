@@ -1029,14 +1029,7 @@ namespace COLIBRIVR
         public static Shader shaderRenderingULRPerFragment { get { return Shader.Find("COLIBRIVR/Rendering/ULRPerFragment"); } }
         public static Shader shaderEvaluationYCbCr { get { return Shader.Find("COLIBRIVR/Evaluation/YCbCr"); } }
 #if UNITY_EDITOR
-        public static ComputeShader computeShaderPerViewMeshesQSTR
-        {
-            get
-            {
-                string pathToShader = Path.Combine(Path.Combine(Path.Combine(PackageReference.GetPackagePath(true), "Shaders"), "Processing"), "PerViewMeshesQSTR.compute");
-                return AssetDatabase.LoadAssetAtPath<ComputeShader>(pathToShader);
-            }
-        }
+        public static ComputeShader computeShaderPerViewMeshesQSTR { get { return (ComputeShader)Resources.Load("PerViewMeshesQSTR"); } }
 #endif //UNITY_EDITOR
 
         /// <summary>
