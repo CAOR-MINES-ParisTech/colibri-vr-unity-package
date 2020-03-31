@@ -23,15 +23,21 @@ namespace COLIBRIVR
 
 #endregion //CONST_FIELDS
 
-#if UNITY_EDITOR
 
 #region STATIC_PROPERTIES
 
+#if UNITY_EDITOR
+
         public static COLIBRIVRSettings packageSettings { get { return GetOrCreateSettings(); } }
+
+#endif //UNITY_EDITOR
+
         public static string settingsFolderAbsolutePath { get { return Path.Combine(Path.GetFullPath(Application.dataPath), _settingsFolderName); } }
         public static string settingsResourcesAbsolutePath { get { return Path.Combine(settingsFolderAbsolutePath, "Resources"); } }
 
 #endregion //STATIC_PROPERTIES
+
+#if UNITY_EDITOR
 
 #region STATIC_METHODS
 

@@ -471,52 +471,6 @@ namespace COLIBRIVR
 
 #region FILE_IO
 
-        /// <summary>
-        /// Returns the path to the directory preceding the one specified as a parameter.
-        /// </summary>
-        /// <param name="path"></param> Absolute path to a directory.
-        /// <returns></returns> The path to the parent directory.
-        public static string GetDirectoryBefore(string path)
-        {
-            path = Path.GetFullPath(path);
-            string[] directories = path.Split(Path.DirectorySeparatorChar);
-            // If there is no parent directory, return the given one.
-            if(directories.Length < 2)
-                return path;
-            // Reach the parent directory by iterating from root.
-            string outputPath = string.Empty;
-            for(int i = 0; i < directories.Length - 1; i++)
-            {
-                outputPath += directories[i];
-                if(i < directories.Length - 2)
-                    outputPath += Path.DirectorySeparatorChar;
-            }
-            return outputPath;
-        }
-
-        private static string _tempDirectoryName = "COLIBRIVRTempDirectory";
-
-        public static string tempDirectoryRelativePath { get{ return Path.Combine(ToRelativePath(COLIBRIVRSettings.settingsFolderAbsolutePath), _tempDirectoryName); } }
-        public static string tempDirectoryAbsolutePath { get{ return Path.Combine(COLIBRIVRSettings.settingsFolderAbsolutePath, _tempDirectoryName); } }
-
-        /// <summary>
-        /// Returns an array containing the names of files at the given path that have one of the given extensions.
-        /// </summary>
-        /// <param name="path"></param> The path at which to find the files.
-        /// <param name="extensions"></param> The choice of extensions.
-        /// <returns></returns>
-        public static FileInfo[] GetFilesByExtension(string path, params string[] extensions)
-        {
-            // Return empty info if the path cannot be found.
-            if(!Directory.Exists(path))
-                return new FileInfo[0];
-            // Return all files in the directory with the given extensions.
-            DirectoryInfo dirInfo = new DirectoryInfo(path);
-            IEnumerable<FileInfo> files = dirInfo.EnumerateFiles();
-            files = files.Where(f => extensions.Contains(f.Extension) || extensions.Contains(f.Extension.ToLower()));
-            return files.ToArray();
-        } 
-
 #if UNITY_EDITOR
 
         /// <summary>
@@ -555,25 +509,6 @@ namespace COLIBRIVR
                 FileUtil.ReplaceDirectory(srcPath, dstPath);
             else
                 FileUtil.ReplaceFile(srcPath, dstPath);
-        }
-
-        /// <summary>
-        /// Gets the path to the Unity project.
-        /// </summary>
-        /// <returns></returns> The path to the Unity project.
-        public static string GetProjectDirectoryPath()
-        {
-            return GetDirectoryBefore(Application.dataPath);
-        }
-
-        /// <summary>
-        /// Transforms an absolute path into a path relative to the Unity project folder.
-        /// </summary>
-        /// <param name="pathAbsolute"></param> The absolute path.
-        /// <returns></returns> The relative path.
-        public static string ToRelativePath(string pathAbsolute)
-        {
-            return pathAbsolute.Replace(GetProjectDirectoryPath() + Path.DirectorySeparatorChar, string.Empty);
         }
 
         /// <summary>
@@ -668,6 +603,70 @@ namespace COLIBRIVR
         }
 
 #endif //UNITY_EDITOR
+
+        public static string tempDirectoryRelativePath { get{ return Path.Combine(ToRelativePath(COLIBRIVRSettings.settingsFolderAbsolutePath), _tempDirectoryName); } }
+        public static string tempDirectoryAbsolutePath { get{ return Path.Combine(COLIBRIVRSettings.settingsFolderAbsolutePath, _tempDirectoryName); } }
+        
+        private static string _tempDirectoryName = "COLIBRIVRTempDirectory";
+
+        /// <summary>
+        /// Returns the path to the directory preceding the one specified as a parameter.
+        /// </summary>
+        /// <param name="path"></param> Absolute path to a directory.
+        /// <returns></returns> The path to the parent directory.
+        public static string GetDirectoryBefore(string path)
+        {
+            path = Path.GetFullPath(path);
+            string[] directories = path.Split(Path.DirectorySeparatorChar);
+            // If there is no parent directory, return the given one.
+            if(directories.Length < 2)
+                return path;
+            // Reach the parent directory by iterating from root.
+            string outputPath = string.Empty;
+            for(int i = 0; i < directories.Length - 1; i++)
+            {
+                outputPath += directories[i];
+                if(i < directories.Length - 2)
+                    outputPath += Path.DirectorySeparatorChar;
+            }
+            return outputPath;
+        }
+        /// <summary>
+        /// Returns an array containing the names of files at the given path that have one of the given extensions.
+        /// </summary>
+        /// <param name="path"></param> The path at which to find the files.
+        /// <param name="extensions"></param> The choice of extensions.
+        /// <returns></returns>
+        public static FileInfo[] GetFilesByExtension(string path, params string[] extensions)
+        {
+            // Return empty info if the path cannot be found.
+            if(!Directory.Exists(path))
+                return new FileInfo[0];
+            // Return all files in the directory with the given extensions.
+            DirectoryInfo dirInfo = new DirectoryInfo(path);
+            IEnumerable<FileInfo> files = dirInfo.EnumerateFiles();
+            files = files.Where(f => extensions.Contains(f.Extension) || extensions.Contains(f.Extension.ToLower()));
+            return files.ToArray();
+        } 
+
+        /// <summary>
+        /// Gets the path to the Unity project.
+        /// </summary>
+        /// <returns></returns> The path to the Unity project.
+        public static string GetProjectDirectoryPath()
+        {
+            return GetDirectoryBefore(Application.dataPath);
+        }
+
+        /// <summary>
+        /// Transforms an absolute path into a path relative to the Unity project folder.
+        /// </summary>
+        /// <param name="pathAbsolute"></param> The absolute path.
+        /// <returns></returns> The relative path.
+        public static string ToRelativePath(string pathAbsolute)
+        {
+            return pathAbsolute.Replace(GetProjectDirectoryPath() + Path.DirectorySeparatorChar, string.Empty);
+        }
 
 #endregion //FILE_IO
 
