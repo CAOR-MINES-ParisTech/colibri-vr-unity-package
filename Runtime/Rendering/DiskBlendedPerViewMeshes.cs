@@ -175,8 +175,8 @@ namespace COLIBRIVR.Rendering
             // Determine additional camera parameters to pass to the material as properties.
             List<float> sourceCamIndices;
             List<Vector4> sourceCamPositions;
-            List<Matrix4x4> transformationMatrices;
-            _helperDiskBlending.UpdateBlendingParameters(ref blendingMaterial, cameraSetup.cameraModels, out sourceCamIndices, out sourceCamPositions, out transformationMatrices);
+            List<Matrix4x4> meshTransformationMatrices;
+            _helperDiskBlending.UpdateBlendingParameters(ref blendingMaterial, cameraSetup.cameraModels, PMPerViewMeshesQSTR.perViewMeshTransforms, out sourceCamIndices, out sourceCamPositions, out meshTransformationMatrices);
             // Perform a soft z-test for each source camera and blend them together, storing the result in the stored depth and color textures.
             MaterialPropertyBlock properties = new MaterialPropertyBlock();
             for(int i = 0; i < PMPerViewMeshesQSTR.perViewMeshTransforms.Length; i++)
@@ -187,7 +187,7 @@ namespace COLIBRIVR.Rendering
                 properties.SetFloat(_shaderNameSourceCamIsOmnidirectional, cameraSetup.cameraModels[i].isOmnidirectional ? 1 : 0);
                 // Draw the mesh into the target textures' color and depth buffers.
                 _helperCommandBuffer.commandBuffer.SetRenderTarget(color: _targetColorTexture, depth: _targetDepthTexture);
-                _helperCommandBuffer.commandBuffer.DrawMesh(PMPerViewMeshesQSTR.perViewMeshes[i], transformationMatrices[i], blendingMaterial, 0, 0, properties);
+                _helperCommandBuffer.commandBuffer.DrawMesh(PMPerViewMeshesQSTR.perViewMeshes[i], meshTransformationMatrices[i], blendingMaterial, 0, 0, properties);
                 // Copy the target textures into the stored textures.
                 _helperCommandBuffer.commandBuffer.Blit(_targetColorTexture, _storedColorTexture);
                 _helperCommandBuffer.commandBuffer.Blit(_targetDepthTexture, _storedDepthTexture);

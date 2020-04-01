@@ -162,8 +162,8 @@ namespace COLIBRIVR.Rendering
             // Determine camera parameters to pass to the material as properties.
             List<float> sourceCamIndices;
             List<Vector4> sourceCamPositions;
-            List<Matrix4x4> transformationMatrices;
-            _helperDiskBlending.UpdateBlendingParameters(ref blendingMaterial, cameraSetup.cameraModels, out sourceCamIndices, out sourceCamPositions, out transformationMatrices);
+            List<Matrix4x4> meshTransformationMatrices;
+            _helperDiskBlending.UpdateBlendingParameters(ref blendingMaterial, cameraSetup.cameraModels, PMPerViewMeshesFS.meshTransforms, out sourceCamIndices, out sourceCamPositions, out meshTransformationMatrices);
             // Update the blending material with the current focal length.
             _helperFocalSurfaces.SendFocalLengthToBlendingMaterial(ref blendingMaterial);
             // Indicate the cameras' indices and positions.
@@ -177,7 +177,7 @@ namespace COLIBRIVR.Rendering
             _helperCommandBuffer.commandBuffer.SetRenderTarget(BuiltinRenderTextureType.CameraTarget);
             _helperCommandBuffer.commandBuffer.ClearRenderTarget(true, true, Color.clear);
             // Render the focal surfaces to the depth and color buffer using GPU instancing.
-            _helperCommandBuffer.commandBuffer.DrawMeshInstanced(PMPerViewMeshesFS.meshTransforms[0].GetComponent<MeshFilter>().sharedMesh, 0, blendingMaterial, 0, transformationMatrices.ToArray(), PMPerViewMeshesFS.meshTransforms.Length, properties);
+            _helperCommandBuffer.commandBuffer.DrawMeshInstanced(PMPerViewMeshesFS.meshTransforms[0].GetComponent<MeshFilter>().sharedMesh, 0, blendingMaterial, 0, meshTransformationMatrices.ToArray(), PMPerViewMeshesFS.meshTransforms.Length, properties);
             // Normalize the RGB channels of the color buffer by the alpha channel, by copying into a temporary render texture.
             // Note: Be sure to use ZWrite Off. Blit renders a quad, and thus - if ZWrite On - provides the target with the quad's depth, not the render texture's depth.
             int tempID = Shader.PropertyToID("TempCopyColorBuffer");

@@ -71,10 +71,11 @@ namespace COLIBRIVR.Rendering
         /// </summary>
         /// <param name="blendingMaterial"></param> The blending material to update.
         /// <param name="cameraModels"></param> The source camera models.
+        /// <param name="meshTransforms"></param> The transforms of the instantiated meshes.
         /// <param name="sourceCamIndices"></param> Outputs the list of source camera indices.
         /// <param name="sourceCamPositions"></param> Outputs the list of source camera positions.
-        /// <param name="transformationMatrices"></param> Outputs the list of source camera matrices.
-        public void UpdateBlendingParameters(ref Material blendingMaterial, CameraModel[] cameraModels, out List<float> sourceCamIndices, out List<Vector4> sourceCamPositions, out List<Matrix4x4> transformationMatrices)
+        /// <param name="meshTransformationMatrices"></param> Outputs the list of transformation matrices for the instantiated meshes.
+        public void UpdateBlendingParameters(ref Material blendingMaterial, CameraModel[] cameraModels, Transform[] meshTransforms, out List<float> sourceCamIndices, out List<Vector4> sourceCamPositions, out List<Matrix4x4> meshTransformationMatrices)
         {
             // Set parameters for the blending material.
             blendingMaterial.SetInt(_shaderNameSourceCamCount, cameraModels.Length);
@@ -83,13 +84,13 @@ namespace COLIBRIVR.Rendering
             // Determine additional camera parameters to pass to the material as properties.
             sourceCamIndices = new List<float>();
             sourceCamPositions = new List<Vector4>();
-            transformationMatrices = new List<Matrix4x4>();
+            meshTransformationMatrices = new List<Matrix4x4>();
             for(int iter = 0; iter < cameraModels.Length; iter ++)
             {
                 CameraModel cameraModel = cameraModels[iter];
                 sourceCamIndices.Add(iter);
                 sourceCamPositions.Add(cameraModel.transform.position);
-                transformationMatrices.Add(cameraModel.meshRenderer.localToWorldMatrix);
+                meshTransformationMatrices.Add(meshTransforms[iter].localToWorldMatrix);
             }
         }
 
