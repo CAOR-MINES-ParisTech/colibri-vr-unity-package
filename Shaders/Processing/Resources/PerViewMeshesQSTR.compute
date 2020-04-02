@@ -16,9 +16,9 @@
 /// </summary>
 
 /// HEADER
-    #include "./../CGIncludes/CoreCG.cginc"
-    #include "./../CGIncludes/CameraCG.cginc"
-    #include "./../CGIncludes/ColorCG.cginc"
+    #include "./../../CGIncludes/CoreCG.cginc"
+    #include "./../../CGIncludes/CameraCG.cginc"
+    #include "./../../CGIncludes/ColorCG.cginc"
     #pragma kernel ComputeQuadtreeValues
     #pragma kernel ComputeBlockSplits
 /// ENDHEADER
