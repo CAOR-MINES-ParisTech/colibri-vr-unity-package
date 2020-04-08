@@ -66,8 +66,8 @@ namespace COLIBRIVR.DatasetHelpers
             GeneralToolkit.EditorStart(serializedObject, _targetObject);
 
             // Enable the user to select the input directory.
-            GeneralToolkit.EditorNewSection("Rectified images directory");
-            SectionRectifiedImagesDirectory();
+            GeneralToolkit.EditorNewSection("Data directory");
+            SectionDataDirectory();
 
             // Enable the user to parse the camera setup from the set of images.
             GeneralToolkit.EditorNewSection("Parse camera setup");
@@ -84,9 +84,15 @@ namespace COLIBRIVR.DatasetHelpers
         /// <summary>
         /// Enables the user to choose the directory containing the rectified images from the Stanford Light Field Archive.
         /// </summary>
-        public void SectionRectifiedImagesDirectory()
+        public void SectionDataDirectory()
         {
-            string searchTitle = "Select directory containing the rectified images";
+            EditorGUILayout.Space();
+            string label = "The rectified images downloaded from the Stanford Light Field Archive should be placed in a folder named \"images\".";
+            EditorGUILayout.LabelField(label, GeneralToolkit.wordWrapStyle);
+            label = "Please specify the parent directory containing this \"images\" folder:";
+            EditorGUILayout.LabelField(label, GeneralToolkit.wordWrapStyle);
+            EditorGUILayout.Space();
+            string searchTitle = "Select the parent directory of the directory containing the rectified images";
             string tooltip = "Path must be within the Unity project folder (but can be outside of Assets).";
             bool clicked;
             string outPath;
@@ -113,7 +119,6 @@ namespace COLIBRIVR.DatasetHelpers
             EditorGUILayout.Space();
             label = "Parse and save";
             tooltip = "Camera setup will be parsed and saved here: \"" + _targetObject.dataHandler.dataDirectory + "\".";
-            GeneralToolkit.EditorRequirePlayMode(ref tooltip);
             if(_targetObject.colorCount < 1)
                 tooltip = "No color images were found in the \"images\" folder of the directory: \"" + _targetObject.dataHandler.dataDirectory + "\".";
             if(GUILayout.Button(new GUIContent(label, tooltip)))
