@@ -108,8 +108,10 @@ namespace COLIBRIVR.Rendering
         {
             if(_initialized)
             {
+#if UNITY_EDITOR
                 // Update whether the colors represent the camera indices.
                 cameraSetup.SetColorIsIndices(ref blendingMaterial);
+#endif //UNITY_EDITOR
                 // Update the command buffer.
                 UpdateCommandBuffer();
             }
