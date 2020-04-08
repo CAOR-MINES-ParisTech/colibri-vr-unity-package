@@ -29,8 +29,8 @@ namespace COLIBRIVR.Rendering
         
         private bool[] _areCamerasOmnidirectional;
         private float[] _initialFocals;
-        private Vector3[] _initialPositions;
-        private Vector3[] _initialScales;
+        private Vector3[] _initialLocalPositions;
+        private Vector3[] _initialLocalScales;
 
 #endregion //FIELDS
 
@@ -78,15 +78,15 @@ namespace COLIBRIVR.Rendering
         {
             _areCamerasOmnidirectional = new bool[cameraModels.Length];
             _initialFocals = new float[cameraModels.Length];
-            _initialPositions = new Vector3[cameraModels.Length];
-            _initialScales = new Vector3[cameraModels.Length];
+            _initialLocalPositions = new Vector3[cameraModels.Length];
+            _initialLocalScales = new Vector3[cameraModels.Length];
             for(int sourceCamIndex = 0; sourceCamIndex < cameraModels.Length; sourceCamIndex++)
             {
                 CameraModel cameraModel = cameraModels[sourceCamIndex];
                 _areCamerasOmnidirectional[sourceCamIndex] = cameraModel.isOmnidirectional;
                 _initialFocals[sourceCamIndex] = cameraModel.isOmnidirectional ? 1f : Camera.FieldOfViewToFocalLength(cameraModel.fieldOfView.x, 1f);
-                _initialPositions[sourceCamIndex] = focalSurfaceTransforms[sourceCamIndex].position;
-                _initialScales[sourceCamIndex] = focalSurfaceTransforms[sourceCamIndex].localScale;
+                _initialLocalPositions[sourceCamIndex] = focalSurfaceTransforms[sourceCamIndex].localPosition;
+                _initialLocalScales[sourceCamIndex] = focalSurfaceTransforms[sourceCamIndex].localScale;
             }
         }
 
@@ -99,12 +99,12 @@ namespace COLIBRIVR.Rendering
             for(int i = 0; i < focalSurfaceTransforms.Length; i++)
             {
                 float focalRatio = _focalLength / _initialFocals[i];
-                Vector3 position = _initialPositions[i];
+                Vector3 localPosition = _initialLocalPositions[i];
                 if(!_areCamerasOmnidirectional[i])
-                    position += _focalLength * focalSurfaceTransforms[i].forward;
-                Quaternion rotation = focalSurfaceTransforms[i].rotation;
-                Vector3 scale = focalRatio * _initialScales[i];
-                GeneralToolkit.SetTransformValues(focalSurfaceTransforms[i], false, position, rotation, scale);
+                    localPosition += _focalLength * focalSurfaceTransforms[i].forward;
+                Quaternion localRotation = focalSurfaceTransforms[i].localRotation;
+                Vector3 localScale = focalRatio * _initialLocalScales[i];
+                GeneralToolkit.SetTransformValues(focalSurfaceTransforms[i], true, localPosition, localRotation, localScale);
             }
         }
 

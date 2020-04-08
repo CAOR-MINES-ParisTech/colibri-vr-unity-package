@@ -35,6 +35,26 @@ namespace COLIBRIVR.Acquisition
 
 #endregion //CONST_FIELDS
 
+#region STATIC_METHODS
+
+#if UNITY_EDITOR
+
+        /// <summary>
+        /// Saves the acquisition information in specific files.
+        /// The data is stored based on the COLMAP file system. 
+        /// </summary>
+        public static void SaveAcquisitionInformation(DataHandler dataHandler, CameraSetup cameraSetup)
+        {
+            COLMAPConnector.CreateDirectoryStructureForAcquisition(dataHandler.dataDirectory);
+            COLMAPConnector.SaveCamerasInformation(cameraSetup.cameraModels, dataHandler.dataDirectory);
+            COLMAPConnector.SaveImagesInformation(cameraSetup.cameraModels, dataHandler.dataDirectory);
+            dataHandler.SaveCOLIBRIVRAdditionalInformation(cameraSetup);
+        }
+
+#endif //UNITY_EDITOR
+
+#endregion //STATIC_METHODS
+
 #region PROPERTIES
 
         public DataHandler dataHandler { get { return _dataHandler; } }
@@ -280,18 +300,6 @@ namespace COLIBRIVR.Acquisition
         }
 
         /// <summary>
-        /// Saves the acquisition information in specific files.
-        /// The data is stored based on the COLMAP file system. 
-        /// </summary>
-        public void SaveAcquisitionInformation()
-        {
-            COLMAPConnector.CreateDirectoryStructureForAcquisition(dataHandler.dataDirectory);
-            COLMAPConnector.SaveCamerasInformation(cameraSetup.cameraModels, dataHandler.dataDirectory);
-            COLMAPConnector.SaveImagesInformation(cameraSetup.cameraModels, dataHandler.dataDirectory);
-            dataHandler.SaveCOLIBRIVRAdditionalInformation(cameraSetup);
-        }
-
-        /// <summary>
         /// Saves the meshes in the scene as a global mesh asset in the data directory.
         /// </summary>
         public void SaveGlobalMesh()
@@ -342,7 +350,7 @@ namespace COLIBRIVR.Acquisition
             // Store the initial preview index.
             int initialPreviewIndex = cameraSetup.previewIndex;
             // Store the pose data and camera parameters into a file.
-            SaveAcquisitionInformation();
+            SaveAcquisitionInformation(dataHandler, cameraSetup);
             // If desired, save the scene's meshes as a global asset.
             if(_copyGlobalMesh)
                 SaveGlobalMesh();

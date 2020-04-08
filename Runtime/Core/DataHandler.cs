@@ -154,7 +154,7 @@ namespace COLIBRIVR
         {
             // Determine the camera model, or initialize a new one if there is none.
             CameraModel cameraParams;
-            if(cameraSetup.cameraModels != null)
+            if(cameraSetup.cameraModels != null && cameraSetup.cameraModels.Length > 0)
                 cameraParams = cameraSetup.cameraModels[0];
             else
                 cameraParams = CameraModel.CreateCameraModel();

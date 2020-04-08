@@ -19,6 +19,8 @@ namespace COLIBRIVR.Rendering
 
         public CommandBuffer commandBuffer;
 
+        private CameraEvent _cameraEvent;
+
 #endregion //FIELDS
 
 #region INHERITANCE_METHODS
@@ -42,7 +44,28 @@ namespace COLIBRIVR.Rendering
         {
 			commandBuffer = new CommandBuffer();
 			commandBuffer.name = gameObject.name + " - Execute rendering";
-			renderingCaller.mainCamera.AddCommandBuffer(cameraEvent, commandBuffer);
+            _cameraEvent = cameraEvent;
+            if(renderingCaller != null && renderingCaller.mainCamera != null)
+			    renderingCaller.mainCamera.AddCommandBuffer(_cameraEvent, commandBuffer);
+#if UNITY_EDITOR
+            UnityEditor.SceneView sceneView = UnityEditor.SceneView.lastActiveSceneView;
+            if(sceneView != null && sceneView.camera != null)
+                sceneView.camera.AddCommandBuffer(_cameraEvent, commandBuffer);
+#endif //UNITY_EDITOR
+        }
+
+        /// <summary>
+        /// Removes the command buffer used for rendering.
+        /// </summary>
+        public void ClearCommandBuffer()
+        {
+            if(renderingCaller != null && renderingCaller.mainCamera != null)
+    			renderingCaller.mainCamera.RemoveCommandBuffer(_cameraEvent, commandBuffer);
+#if UNITY_EDITOR
+            UnityEditor.SceneView sceneView = UnityEditor.SceneView.lastActiveSceneView;
+            if(sceneView != null && sceneView.camera != null)
+                sceneView.camera.RemoveCommandBuffer(_cameraEvent, commandBuffer);
+#endif //UNITY_EDITOR
         }
 
         /// <summary>

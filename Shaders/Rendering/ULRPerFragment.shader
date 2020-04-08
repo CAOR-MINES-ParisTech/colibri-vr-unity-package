@@ -26,7 +26,6 @@ Shader "COLIBRIVR/Rendering/ULRPerFragment"
         _ResolutionWeight ("Relative impact of the {resolution} factor compared to the {angle difference} factor in the ULR algorithm", float) = 0.2
         _DepthCorrectionFactor ("Factor for depth correction", float) = 0.1
         _GlobalTextureMapWeight ("Relative weight of the global texture map, compared to the estimated color.", float) = 0.1
-        _IsSceneViewCamera ("Whether the current render camera is the scene view camera or not", int) = 0
         _IsColorSourceCamIndices ("Whether the displayed colors help visualize the source camera indices instead of the actual texture colors.", int) = 0
         _ExcludedSourceView ("Excluded source camera index", int) = -1
     }

@@ -56,7 +56,7 @@ namespace COLIBRIVR.Rendering
             string label = "Max. blend angle:";
             string tooltip = "Maximum angle difference (degrees) between source ray and view ray for the color value to be blended.";
             SerializedProperty propertyMaxBlendAngle= serializedObject.FindProperty(_propertyNameMaxBlendAngle);
-            propertyMaxBlendAngle.floatValue = EditorGUILayout.Slider(new GUIContent(label, tooltip), propertyMaxBlendAngle.floatValue, 1f, 180f);
+            propertyMaxBlendAngle.floatValue = EditorGUILayout.Slider(new GUIContent(label, tooltip), propertyMaxBlendAngle.floatValue, 0.001f, 180f);
             // Enable the user to choose whether null values should be clipped or displayed as black.
             label = "Clip null values:";
             tooltip = "Whether to clip null values or display them as black.";

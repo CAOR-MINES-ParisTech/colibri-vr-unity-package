@@ -105,6 +105,8 @@ namespace COLIBRIVR.Rendering
         {
             if(_initialized)
             {
+                // Update whether the colors represent the camera indices.
+                cameraSetup.SetColorIsIndices(ref blendingMaterial);
                 // Update the command buffer.
                 UpdateCommandBuffer();
                 // Update the transforms of the focal surface to match the focal length.
@@ -116,6 +118,8 @@ namespace COLIBRIVR.Rendering
         public override void ClearRenderingMethod()
         {
             base.ClearRenderingMethod();
+            // Clear the command buffer.
+            _helperCommandBuffer.ClearCommandBuffer();
         }
 
 #endregion //INHERITANCE_METHODS
@@ -173,6 +177,12 @@ namespace COLIBRIVR.Rendering
             properties.SetFloatArray(_shaderNameSourceCamIsOmnidirectional, sourceCamAreOmnidirectional);
             // Clear the instructions in the command buffer.
             _helperCommandBuffer.commandBuffer.Clear();
+            // Copy the camera target to a temporary render texture, e.g. to copy the skybox in the scene view.
+            int tempID = Shader.PropertyToID("TempCopyColorBuffer");
+            _helperCommandBuffer.commandBuffer.GetTemporaryRT(tempID, -1, -1, 0, FilterMode.Bilinear);
+            _helperCommandBuffer.commandBuffer.SetRenderTarget(tempID);
+            _helperCommandBuffer.commandBuffer.ClearRenderTarget(true, true, Color.clear);
+            _helperCommandBuffer.commandBuffer.Blit(BuiltinRenderTextureType.CameraTarget, tempID);
             // Clear the camera target's color and depth buffers.
             _helperCommandBuffer.commandBuffer.SetRenderTarget(BuiltinRenderTextureType.CameraTarget);
             _helperCommandBuffer.commandBuffer.ClearRenderTarget(true, true, Color.clear);
@@ -180,10 +190,6 @@ namespace COLIBRIVR.Rendering
             _helperCommandBuffer.commandBuffer.DrawMeshInstanced(PMPerViewMeshesFS.meshTransforms[0].GetComponent<MeshFilter>().sharedMesh, 0, blendingMaterial, 0, meshTransformationMatrices.ToArray(), PMPerViewMeshesFS.meshTransforms.Length, properties);
             // Normalize the RGB channels of the color buffer by the alpha channel, by copying into a temporary render texture.
             // Note: Be sure to use ZWrite Off. Blit renders a quad, and thus - if ZWrite On - provides the target with the quad's depth, not the render texture's depth.
-            int tempID = Shader.PropertyToID("TempCopyColorBuffer");
-            _helperCommandBuffer.commandBuffer.GetTemporaryRT(tempID, -1, -1, 0, FilterMode.Bilinear);
-            _helperCommandBuffer.commandBuffer.SetRenderTarget(tempID);
-            _helperCommandBuffer.commandBuffer.ClearRenderTarget(true, true, Color.clear);
             _helperCommandBuffer.commandBuffer.Blit(BuiltinRenderTextureType.CameraTarget, tempID, blendingMaterial, 1);
             _helperCommandBuffer.commandBuffer.Blit(tempID, BuiltinRenderTextureType.CameraTarget);
             _helperCommandBuffer.commandBuffer.ReleaseTemporaryRT(tempID);

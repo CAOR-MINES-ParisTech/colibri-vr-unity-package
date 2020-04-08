@@ -108,6 +108,8 @@ namespace COLIBRIVR.Rendering
         {
             if(_initialized)
             {
+                // Update whether the colors represent the camera indices.
+                cameraSetup.SetColorIsIndices(ref blendingMaterial);
                 // Update the command buffer.
                 UpdateCommandBuffer();
             }
@@ -117,6 +119,8 @@ namespace COLIBRIVR.Rendering
         public override void ClearRenderingMethod()
         {
             base.ClearRenderingMethod();
+            // Clear the command buffer.
+            _helperCommandBuffer.ClearCommandBuffer();
         }
 
 #endregion //INHERITANCE_METHODS
@@ -162,6 +166,12 @@ namespace COLIBRIVR.Rendering
         {
             // Clear the instructions in the command buffer.
             _helperCommandBuffer.commandBuffer.Clear();
+            // Copy the camera target to a temporary render texture, e.g. to copy the skybox in the scene view.
+            int tempID = Shader.PropertyToID("TempCopyColorBuffer");
+            _helperCommandBuffer.commandBuffer.GetTemporaryRT(tempID, -1, -1, 0, FilterMode.Bilinear);
+            _helperCommandBuffer.commandBuffer.SetRenderTarget(tempID);
+            _helperCommandBuffer.commandBuffer.ClearRenderTarget(true, true, Color.clear);
+            _helperCommandBuffer.commandBuffer.Blit(BuiltinRenderTextureType.CameraTarget, tempID);
             // Clear the camera target's color and depth buffers.
             _helperCommandBuffer.commandBuffer.SetRenderTarget(BuiltinRenderTextureType.CameraTarget);
             _helperCommandBuffer.commandBuffer.ClearRenderTarget(true, true, Color.clear);
@@ -193,7 +203,8 @@ namespace COLIBRIVR.Rendering
                 _helperCommandBuffer.commandBuffer.Blit(_targetDepthTexture, _storedDepthTexture);
             }
             // Normalize the stored color texture's RGB channels by its alpha channel, and copy the stored depth and color textures to the camera target.
-            _helperCommandBuffer.commandBuffer.Blit(null, BuiltinRenderTextureType.CameraTarget, blendingMaterial, 1);
+            _helperCommandBuffer.commandBuffer.Blit(tempID, BuiltinRenderTextureType.CameraTarget, blendingMaterial, 1);
+            _helperCommandBuffer.commandBuffer.ReleaseTemporaryRT(tempID);
         }
 
 #endregion //METHODS

@@ -21,6 +21,7 @@ Shader "COLIBRIVR/Rendering/DiskBlendedFocalSurfaces"
         _ClipNullValues ("Clip null values", int) = 0
         _SourceCamCount ("Number of source cameras", int) = 1
         _FocalLength ("Focal length", float) = 1.0
+        _IsColorSourceCamIndices ("Whether the displayed colors help visualize the source camera indices instead of the actual texture colors.", int) = 0
         _ExcludedSourceView ("Excluded source camera index", int) = -1
         [PerRendererData] _SourceCamIndex ("Source camera index", int) = 0
         [PerRendererData] _SourceCamPosXYZ ("Source camera position", Vector) = (0, 0, 0)
@@ -64,6 +65,7 @@ Shader "COLIBRIVR/Rendering/DiskBlendedFocalSurfaces"
                 float3 viewCamToSourceCamWorldXYZ : TEXCOORD1;
                 float4 worldXYZW : TEXCOORD2;
                 uint isOmnidirectional : TEXCOORD3;
+                uint sourceCamIndex : TEXCOORD4;
             };
     /// ENDSTRUCTS
 
@@ -73,7 +75,8 @@ Shader "COLIBRIVR/Rendering/DiskBlendedFocalSurfaces"
                 UNITY_SETUP_INSTANCE_ID(i);
                 clipXYZW = UnityObjectToClipPos(i.objectXYZW);
                 draw_v2f o;
-                o.texArrayUVZ = float3(i.texUV, UNITY_ACCESS_INSTANCED_PROP(InstanceProperties, _SourceCamIndex));
+                o.sourceCamIndex = UNITY_ACCESS_INSTANCED_PROP(InstanceProperties, _SourceCamIndex);
+                o.texArrayUVZ = float3(i.texUV, o.sourceCamIndex);
                 o.viewCamToSourceCamWorldXYZ = UNITY_ACCESS_INSTANCED_PROP(InstanceProperties, _SourceCamPosXYZ) - _WorldSpaceCameraPos.xyz;
                 o.worldXYZW = mul(unity_ObjectToWorld, i.objectXYZW);
                 o.isOmnidirectional = UNITY_ACCESS_INSTANCED_PROP(InstanceProperties, _SourceCamIsOmnidirectional);
@@ -93,12 +96,16 @@ Shader "COLIBRIVR/Rendering/DiskBlendedFocalSurfaces"
                     if(_ClipNullValues)
                         clip(-1);
                     else
-                        o.color = 0;
+                        o.color = float4(0, 0, 0, _MinWeight);
                 }
                 else
                 {
-                    fixed4 meshColor = weight * fixed4(UNITY_SAMPLE_TEX2DARRAY(_ColorData, i.texArrayUVZ).rgb, 1);
-                    o.color = meshColor;
+                    fixed3 colorRGB;
+                    if(_IsColorSourceCamIndices == 1)
+                        colorRGB = GetColorForIndex(i.sourceCamIndex, _SourceCamCount);
+                    else
+                        colorRGB = UNITY_SAMPLE_TEX2DARRAY(_ColorData, i.texArrayUVZ).rgb;
+                    o.color = weight * fixed4(colorRGB, 1);
                 }
                 return o;
             }
@@ -133,7 +140,10 @@ Shader "COLIBRIVR/Rendering/DiskBlendedFocalSurfaces"
             {
                 base_fOUT o;
                 o.color = tex2D(_MainTex, i.texUV);
-                NormalizeByAlpha(o.color);
+                if(o.color.a == 0 || (_ClipNullValues && o.color.a == _MinWeight))
+                    clip(-1);
+                else
+                    NormalizeByAlpha(o.color);
                 return o;
             }
     /// ENDFRAGMENT

@@ -15,6 +15,7 @@ Shader "COLIBRIVR/Rendering/DiskBlendedPerViewMeshes"
 {
     Properties
     {
+        _MainTex ("Current camera target", 2D) = "white" {}
         _ColorData ("Color data", 2DArray) = "white" {}
         _MaxBlendAngle ("Max blend angle", float) = 0.0
         _ClipNullValues ("Clip null values", int) = 0
@@ -57,6 +58,7 @@ Shader "COLIBRIVR/Rendering/DiskBlendedPerViewMeshes"
                 float viewZ : TEXCOORD2;
                 float4 worldXYZW : TEXCOORD3;
                 uint isOmnidirectional : TEXCOORD4;
+                uint sourceCamIndex : TEXCOORD5;
             };
     /// ENDSTRUCTS
 
@@ -68,6 +70,7 @@ Shader "COLIBRIVR/Rendering/DiskBlendedPerViewMeshes"
                 float normalizedDeviceZ = saturate(clipXYZW.z / clipXYZW.w);
                 clipXYZW.z = clipXYZW.w * ScaleNormalizedDeviceZ(sourceCamIndex, normalizedDeviceZ);
                 draw_v2f o;
+                o.sourceCamIndex = sourceCamIndex;
                 o.texArrayUVZ = float3(i.texUV, sourceCamIndex);
                 o.viewCamToSourceCamWorldXYZ = UNITY_ACCESS_INSTANCED_PROP(InstanceProperties, _SourceCamPosXYZ) - _WorldSpaceCameraPos.xyz;
                 o.viewZ = abs(UnityObjectToViewPos(i.objectXYZW).z);
@@ -88,7 +91,12 @@ Shader "COLIBRIVR/Rendering/DiskBlendedPerViewMeshes"
                     clip(-1);
                 float2 screenUV = viewportXYZW.xy / _ScreenParams.xy;
                 float meshViewZ = i.viewZ;
-                fixed4 meshColor = weight * fixed4(UNITY_SAMPLE_TEX2DARRAY(_ColorData, i.texArrayUVZ).rgb, 1);
+                fixed3 colorRGB;
+                if(_IsColorSourceCamIndices == 1)
+                    colorRGB = GetColorForIndex(i.sourceCamIndex, _SourceCamCount);
+                else
+                    colorRGB = UNITY_SAMPLE_TEX2DARRAY(_ColorData, i.texArrayUVZ).rgb;
+                fixed4 meshColor = weight * fixed4(colorRGB, 1);
                 o.color = ComputeBlendedColor(screenUV, meshViewZ, meshColor);
                 return o;
             }
@@ -114,12 +122,19 @@ Shader "COLIBRIVR/Rendering/DiskBlendedPerViewMeshes"
             #pragma fragment output_frag
     /// ENDHEADER
 
+    /// PROPERTIES
+            sampler2D _MainTex;
+    /// ENDPROPERTIES
+
     /// FRAGMENT
             depth_fOUT output_frag (base_v2f i)
             {
                 depth_fOUT o;
                 o.color = tex2D(_StoredColorTexture, i.texUV);
-                NormalizeByAlpha(o.color);
+                if(o.color.a == 0 || (_ClipNullValues && o.color.a == _MinWeight))
+                    o.color = tex2D(_MainTex, i.texUV);
+                else
+                    NormalizeByAlpha(o.color);
                 o.depth = UnscaleNormalizedDeviceZ(tex2D(_StoredDepthTexture, i.texUV).r);
                 return o;
             }

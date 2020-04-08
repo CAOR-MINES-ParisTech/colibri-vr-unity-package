@@ -179,6 +179,7 @@ namespace COLIBRIVR
 #if UNITY_EDITOR
             _isColorSourceCamIndices = false;
 #endif //UNITY_EDITOR
+            initialViewingPosition = Vector3.zero;
         }
 
         /// <summary>

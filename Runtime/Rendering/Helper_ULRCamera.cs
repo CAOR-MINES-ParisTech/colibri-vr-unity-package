@@ -15,7 +15,6 @@ namespace COLIBRIVR.Rendering
         private const string _shaderNameVertexCamWeightsBuffer = "_VertexCamWeightsBuffer";
         private const string _shaderNameVertexCamIndicesBuffer = "_VertexCamIndicesBuffer";
         private const string _shaderNameBlendFieldComputationParams = "_BlendFieldComputationParams";
-        private const string _shaderNameIsSceneViewCamera = "_IsSceneViewCamera";
 
 #endregion //CONST_FIELDS
 
@@ -23,7 +22,6 @@ namespace COLIBRIVR.Rendering
 
         private bool _initialized;
         private Camera _attachedCam;
-        private bool _isSceneViewCamera;
         private bool _isStereo;
         private List<Helper_ULR> _helperULRList;
         private List<ComputeBuffer> _vertexCamWeightsBufferList;
@@ -70,7 +68,6 @@ namespace COLIBRIVR.Rendering
                 _vertexCamWeightsBufferList = new List<ComputeBuffer>();
                 _vertexCamIndicesBufferList = new List<ComputeBuffer>();
                 _vertexFrontIndexAndCountPerFrameList = new List<Vector3>();
-                _isSceneViewCamera = (_attachedCam.name == "SceneCamera");
                 _isStereo = (_attachedCam.stereoEnabled);
                 _initialized = true;
             }
@@ -168,7 +165,6 @@ namespace COLIBRIVR.Rendering
                         currentBlendingMat.SetBuffer(_shaderNameVertexCamWeightsBuffer, _vertexCamWeightsBufferList[renderedObjIndex]);
                         currentBlendingMat.SetBuffer(_shaderNameVertexCamIndicesBuffer, _vertexCamIndicesBufferList[renderedObjIndex]);
                         currentBlendingMat.SetVector(_shaderNameBlendFieldComputationParams, blendFieldComputationParams);
-                        currentBlendingMat.SetInt(_shaderNameIsSceneViewCamera, _isSceneViewCamera ? 1 : 0);
                     }
                     renderedObjIndex += increment;
                 }

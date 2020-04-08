@@ -28,7 +28,6 @@
     uniform float _ResolutionWeight;
     uniform float _DepthCorrectionFactor;
     uniform float _GlobalTextureMapWeight;
-    uniform uint _IsSceneViewCamera;
     uniform uint _IsColorSourceCamIndices;
     uniform float2 _BlendFieldComputationParams;
     uniform int _ExcludedSourceView;
@@ -421,7 +420,7 @@
                 if(isNotOccluded)
                 {
                     float3 colorRGB = 0;
-                    if(_IsColorSourceCamIndices == 1 && _IsSceneViewCamera == 1)
+                    if(_IsColorSourceCamIndices == 1)
                         colorRGB = GetColorForIndex(sourceCamIndex, _SourceCamCount);
                     else
                         colorRGB = UNITY_SAMPLE_TEX2DARRAY_LOD(_ColorData, sourceTexArrayUVZ, 0).rgb;

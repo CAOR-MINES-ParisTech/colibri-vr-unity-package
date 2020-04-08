@@ -13,6 +13,7 @@
 
 /// HEADER
     #include "./../CGIncludes/CoreCG.cginc"
+    #include "./../CGIncludes/ColorCG.cginc"
     #include "./../CGIncludes/CameraCG.cginc"
 /// ENDHEADER
 
@@ -23,13 +24,14 @@
         UNITY_DEFINE_INSTANCED_PROP(float3, _SourceCamPosXYZ)
         UNITY_DEFINE_INSTANCED_PROP(int, _SourceCamIsOmnidirectional)
     UNITY_INSTANCING_BUFFER_END(InstanceProperties)
-    sampler2D _StoredColorTexture;
-    sampler2D _StoredDepthTexture;
-    float _MaxBlendAngle;
-    uint _ClipNullValues;
-    uint _SourceCamCount;
-    float _FocalLength;
-    int _ExcludedSourceView;
+    uniform sampler2D _StoredColorTexture;
+    uniform sampler2D _StoredDepthTexture;
+    uniform float _MaxBlendAngle;
+    uniform uint _ClipNullValues;
+    uniform uint _SourceCamCount;
+    uniform float _FocalLength;
+    uniform uint _IsColorSourceCamIndices;
+    uniform int _ExcludedSourceView;
     static const float _DepthFactor = 0.1;
     static const float _MinWeight = 0.001;
     static const float _ScalingMargin = 0.01;
@@ -43,7 +45,6 @@
     /// </summary>
     float ScaleNormalizedDeviceZ(uint renderingIndex, float normalizedDeviceZ)
     {
-        // return normalizedDeviceZ;
         return (renderingIndex + _ScalingMargin + (1.0 - _ScalingMargin) * normalizedDeviceZ) / _SourceCamCount;
     }
 
@@ -52,7 +53,6 @@
     /// </summary>
     float UnscaleNormalizedDeviceZ(float scaledNormalizedDeviceZ)
     {
-        // return scaledNormalizedDeviceZ;
         uint renderingIndex = floor(scaledNormalizedDeviceZ * _SourceCamCount);
         return (scaledNormalizedDeviceZ * _SourceCamCount - 1.0 * renderingIndex - _ScalingMargin) / (1.0 - _ScalingMargin);
     }
@@ -62,21 +62,20 @@
     /// </summary>
     float GetViewpointWeightForFragment(float4 fragmentWorldXYZW, float3 viewCamToSourceCamWorldXYZ, uint isOmnidirectional)
     {
-        // float3 frameCamForwardXYZ = -UNITY_MATRIX_V[2].xyz;
         float3 viewCamToFragmentWorldXYZ = (fragmentWorldXYZW - _WorldSpaceCameraPos).xyz;
         float3 sourceCamToFragmentWorldXYZ = viewCamToFragmentWorldXYZ - viewCamToSourceCamWorldXYZ;
         float degreeAngle = GetDegreeAngleBetweenVectors(viewCamToSourceCamWorldXYZ, viewCamToFragmentWorldXYZ);
-        // if(_MaxBlendAngle < 180.0 && dot(sourceCamToFragmentWorldXYZ, viewCamToSourceCamWorldXYZ) < 0)
-        //     return 0;
         degreeAngle = abs(degreeAngle);
-        float maxLength = _FocalLength;
-        float weight01;
-        // if(isOmnidirectional)
-        // {
+        float oppositeWeight01 = 1.0;
+        if(isOmnidirectional)
+        {
             if(degreeAngle > 90.0)
                 degreeAngle = 180.0 - degreeAngle;
-        // }
-        weight01 = clamp(1.0 - (length(viewCamToSourceCamWorldXYZ) / maxLength) * (degreeAngle / _MaxBlendAngle), _MinWeight, 1.0);
+            float maxLength = _FocalLength;
+            oppositeWeight01 *= length(viewCamToSourceCamWorldXYZ) / maxLength;
+        }
+        oppositeWeight01 *= degreeAngle / _MaxBlendAngle;
+        float weight01 = clamp(1.0 - oppositeWeight01, _MinWeight, 1.0);
         return weight01;
     }
 
