@@ -19,9 +19,9 @@
   },
   "samples": [
     {
-      "displayName": "Demo scenes",
+      "displayName": "Demo Scenes",
       "description": "A set of sample scenes to demonstrate the package.",
-      "path": "Samples~/Scenes"
+      "path": "Samples~/Demo Scenes"
     }
   ]
 }
