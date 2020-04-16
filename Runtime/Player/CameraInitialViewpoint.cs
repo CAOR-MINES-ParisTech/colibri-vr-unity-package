@@ -11,6 +11,13 @@ namespace COLIBRIVR.Player
     public class CameraInitialViewpoint : MonoBehaviour
     {
 
+#region FIELDS
+
+        public bool setPosition = true;
+        public bool setRotation = true;
+
+#endregion //FIELDS
+
 #region INHERITANCE_METHODS
 
         /// <summary>
@@ -55,12 +62,18 @@ namespace COLIBRIVR.Player
                 yield return new WaitForSeconds(0.1f);
             }
             // Make the camera's viewpoint match the target by modifying the player transform.
-            Vector3 addPosition = targetCameraPos - mainCameraTransform.position;
-            playerTransform.position += addPosition;
-            Quaternion addRotation = targetCameraRot * Quaternion.Inverse(mainCameraTransform.rotation);
-            Vector3 axis; float angle;
-            addRotation.ToAngleAxis(out angle, out axis);
-            playerTransform.RotateAround(mainCameraTransform.position, axis, angle);
+            if(setPosition)
+            {
+                Vector3 addPosition = targetCameraPos - mainCameraTransform.position;
+                playerTransform.position += addPosition;
+            }
+            if(setRotation)
+            {
+                Quaternion addRotation = targetCameraRot * Quaternion.Inverse(mainCameraTransform.rotation);
+                Vector3 axis; float angle;
+                addRotation.ToAngleAxis(out angle, out axis);
+                playerTransform.RotateAround(mainCameraTransform.position, axis, angle);
+            }
         }
 
 #endregion //METHODS
