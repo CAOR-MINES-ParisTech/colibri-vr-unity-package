@@ -16,5 +16,12 @@
     "name": "Grégoire Dupont de Dinechin",
     "email": "gregoire@dinechin.org",
     "url": "https://www.greg3dinechin.com"
-  }
+  },
+  "samples": [
+    {
+      "displayName": "Demo scenes",
+      "description": "A set of sample scenes to demonstrate the package.",
+      "path": "Samples~/Scenes"
+    }
+  ]
 }
