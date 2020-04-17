@@ -68,6 +68,7 @@ namespace COLIBRIVR.ExternalConnectors
             serializedObject.Update();
             SubsectionSparseReconstruction(serializedObject);
             SubsectionDenseReconstruction();
+
             serializedObject.ApplyModifiedProperties();
         }
 
@@ -81,7 +82,7 @@ namespace COLIBRIVR.ExternalConnectors
                 string indicatorPathAbsolute = Path.Combine(Application.dataPath, _updateDirectoryIndicatorPathEnd);
                 if(File.Exists(indicatorPathAbsolute))
                 {
-                    ChangeWorkspaceAfterSparseReconstruction();
+                    COLMAPConnector.ChangeWorkspaceAfterSparseReconstruction(dataHandler);
                     GeneralToolkit.Delete(indicatorPathAbsolute);
                     AssetDatabase.Refresh();
                 }
@@ -102,15 +103,6 @@ namespace COLIBRIVR.ExternalConnectors
 #endregion //INHERITANCE_METHODS
 
 #region METHODS
-
-        /// <summary>
-        /// Changes the workspace after having performed sparse reconstruction.
-        /// </summary>
-        private void ChangeWorkspaceAfterSparseReconstruction()
-        {
-            string newDirectory = COLMAPConnector.GetDense0Dir(dataHandler.dataDirectory);
-            dataHandler.ChangeDataDirectory(newDirectory);
-        }
 
         /// <summary>
         /// Enables the user to launch sparse 3D reconstruction via COLMAP.
@@ -155,9 +147,8 @@ namespace COLIBRIVR.ExternalConnectors
                 if(EditorUtility.DisplayDialog(label, tooltip, "Yes", "No"))
                 {
                     StartCoroutine(COLMAPConnector.RunSparseReconstructionCoroutine(processingCaller, workspace, _COLMAPCameraIndex, _isSingleCamera, _maxImageSize));
+                    hasPerformedSparseReconstruction = true;
                 }
-                hasPerformedSparseReconstruction = true;
-                ChangeWorkspaceAfterSparseReconstruction();
             }
             // Reset the GUI.
             GUI.enabled = isGUIEnabled;

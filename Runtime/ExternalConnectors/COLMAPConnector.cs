@@ -229,6 +229,16 @@ namespace COLIBRIVR.ExternalConnectors
         }
 
         /// <summary>
+        /// Changes the workspace after having performed sparse reconstruction.
+        /// </summary>
+        /// <param name="dataHandler"></param> The data handler of which to change the data directory.
+        public static void ChangeWorkspaceAfterSparseReconstruction(DataHandler dataHandler)
+        {
+            string newDirectory = GetDense0Dir(dataHandler.dataDirectory);
+            dataHandler.ChangeDataDirectory(newDirectory);
+        }
+
+        /// <summary>
         /// Coroutine that runs the sparse reconstruction process.
         /// </summary>
         /// <param name="caller"></param> The processing object calling this method.
@@ -296,9 +306,8 @@ namespace COLIBRIVR.ExternalConnectors
                     progressBarParams[1] = GetProgressBarParamsOne("Undistortion", true, step, maxStep);
                     yield return caller.StartCoroutine(RunUndistortionCommand(caller, workspace, displayProgressBar, stopOnError, progressBarParams, maxImageSize));
                     // Change the workspace and the data directory to the one created in the dense folder.
-                    // workspace = GetDense0Dir(workspace);
-                    // caller.dataHandler.ChangeDataDirectory(caller, workspace);
-                    // Debug.Log(GeneralToolkit.FormatScriptMessage(typeof(COLMAPConnector), "Changed data directory to: " + workspace));
+                    ChangeWorkspaceAfterSparseReconstruction(caller.dataHandler);
+                    Debug.Log(GeneralToolkit.FormatScriptMessage(typeof(COLMAPConnector), "Changed data directory to: " + workspace + "."));
                 }
                 // Step six: launch exporting undistorted camera setup as text.
                 else if(step == 6)
@@ -828,6 +837,69 @@ namespace COLIBRIVR.ExternalConnectors
             if(File.Exists(GetCamerasFile(workspace)) && File.Exists(GetImagesFile(workspace)))
                 return true;
             return false;
+        }
+
+        /// <summary>
+        /// Reads the given depth map stored in COLMAP's binary format, and outputs the corresponding two-dimensional array of floats.
+        /// </summary>
+        /// <param name="workspace"></param> The path to the COLMAP workspace.
+        /// <param name="depthMapIndex"></param> The index of the depth map to read.
+        /// <returns></returns> The array of floats.
+        public static float[,] ReadDepthToArray(string workspace, int depthMapIndex)
+        {
+            float[,] floatArray = null;
+            if(Directory.Exists(GetDepthMapsDir(workspace)))
+            {
+                FileInfo[] depthMaps = GeneralToolkit.GetFilesByExtension(GetDepthMapsDir(workspace), ".bin");
+                using(FileStream fileStream = new FileStream(depthMaps[depthMapIndex].FullName, FileMode.Open))
+                {
+                    using(BinaryReader binaryReader = new BinaryReader(fileStream))
+                    {
+                        int delimiterCount = 0;
+                        int width = 0;
+                        int height = 0;
+                        int channels = 0;
+                        string readString = string.Empty;
+                        for(int iter = 0; iter < 100; iter++)
+                        {
+                            char readChar = binaryReader.ReadChar();
+                            if(readChar == '&')
+                            {
+                                int parsedInt = GeneralToolkit.ParseInt(readString);
+                                if(delimiterCount == 0)
+                                    width = parsedInt;
+                                else if(delimiterCount == 1)
+                                    height = parsedInt;
+                                else if(delimiterCount == 2)
+                                    channels = parsedInt;
+                                delimiterCount ++;
+                                readString = string.Empty;
+                            }
+                            else
+                            {
+                                readString += readChar;
+                            }
+                            if(delimiterCount > 2)
+                                break;
+                        }
+                        
+                        int expectedFloatCount = width * height * channels;
+                        floatArray = new float[width, height];
+                        for(int iterY = 0; iterY < height; iterY++)
+                        {
+                            for(int iterX = 0; iterX < width; iterX++)
+                            {
+                                floatArray[iterX, iterY] = binaryReader.ReadSingle();
+                            }
+                        }
+                        for(int iter = 0; iter < 10; iter++)
+                        {
+                            Debug.Log(floatArray[iter, height-1]);
+                        }
+                    }
+                }
+            }
+            return floatArray;
         }
 
 #endregion //STATIC_METHODS
