@@ -51,7 +51,6 @@ namespace COLIBRIVR.DatasetHelpers
             _cameraSetup = CameraSetup.CreateOrResetCameraSetup(transform);
             _dataHandler = DataHandler.CreateOrResetDataHandler(transform);
             // Reset other properties.
-            colorCount = 0;
             scaleFactor = 0.01f;
             repositionAroundCenter = true;
         }
@@ -89,9 +88,9 @@ namespace COLIBRIVR.DatasetHelpers
             Vector3 meanPos = Vector3.zero;
             // Reset the camera models to fit the color count.
             _cameraSetup.ResetCameraModels();
-            _cameraSetup.cameraModels = new CameraModel[colorCount];
+            _cameraSetup.cameraModels = new CameraModel[dataHandler.sourceColorCount];
             // Iteratively add each camera model to the setup.
-            for(int iter = 0; iter < colorCount; iter++)
+            for(int iter = 0; iter < dataHandler.sourceColorCount; iter++)
             {
                 CameraModel cameraModel = _cameraSetup.AddCameraModel(iter);
                 // Store the image's pixel resolution in the camera model.
@@ -110,8 +109,8 @@ namespace COLIBRIVR.DatasetHelpers
             // If it is selected, reposition the camera setup around its center position.
             if(repositionAroundCenter)
             {
-                meanPos /= colorCount;
-                for(int iter = 0; iter < colorCount; iter++)
+                meanPos /= dataHandler.sourceColorCount;
+                for(int iter = 0; iter < dataHandler.sourceColorCount; iter++)
                 {
                     CameraModel cameraModel = _cameraSetup.cameraModels[iter];
                     cameraModel.transform.position = cameraModel.transform.position - meanPos;
