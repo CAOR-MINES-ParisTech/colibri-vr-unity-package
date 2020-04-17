@@ -41,9 +41,6 @@ namespace COLIBRIVR.Processing
 
         public Rendering.Rendering renderingCaller;
         public string sourceDataInfo;
-        public int sourceColorCount;
-        public int sourcePerViewGeometryCount;
-        public int sourceGlobalGeometryCount;
         public string processedDataInfo;
         public bool isDataReadyForBundling;
         public bool isDataBundled;
@@ -283,7 +280,7 @@ namespace COLIBRIVR.Processing
             // Reset the setup's camera models.
             cameraSetup.ResetCameraModels();
             // Check the data directory for source data.
-            dataHandler.CheckStatusOfSourceData(out sourceColorCount, out sourcePerViewGeometryCount, out sourceGlobalGeometryCount, out sourceDataInfo);
+            dataHandler.CheckStatusOfSourceData();
             // Check that the source data directory is configured based on the COLMAP file structure.
             if(COLMAPConnector.DirectoryIsValidForReading(dataHandler.dataDirectory))
             {

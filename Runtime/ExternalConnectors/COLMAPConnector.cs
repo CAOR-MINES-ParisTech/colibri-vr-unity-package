@@ -232,10 +232,12 @@ namespace COLIBRIVR.ExternalConnectors
         /// Changes the workspace after having performed sparse reconstruction.
         /// </summary>
         /// <param name="dataHandler"></param> The data handler of which to change the data directory.
-        public static void ChangeWorkspaceAfterSparseReconstruction(DataHandler dataHandler)
+        /// <returns></returns> The new workspace.
+        public static string ChangeWorkspaceAfterSparseReconstruction(DataHandler dataHandler)
         {
             string newDirectory = GetDense0Dir(dataHandler.dataDirectory);
             dataHandler.ChangeDataDirectory(newDirectory);
+            return newDirectory;
         }
 
         /// <summary>
@@ -305,9 +307,6 @@ namespace COLIBRIVR.ExternalConnectors
                     // Launch undistortion.
                     progressBarParams[1] = GetProgressBarParamsOne("Undistortion", true, step, maxStep);
                     yield return caller.StartCoroutine(RunUndistortionCommand(caller, workspace, displayProgressBar, stopOnError, progressBarParams, maxImageSize));
-                    // Change the workspace and the data directory to the one created in the dense folder.
-                    ChangeWorkspaceAfterSparseReconstruction(caller.dataHandler);
-                    Debug.Log(GeneralToolkit.FormatScriptMessage(typeof(COLMAPConnector), "Changed data directory to: " + workspace + "."));
                 }
                 // Step six: launch exporting undistorted camera setup as text.
                 else if(step == 6)
@@ -315,9 +314,10 @@ namespace COLIBRIVR.ExternalConnectors
                     // Launch export process.
                     progressBarParams[1] = GetProgressBarParamsOne("Exporting camera setup (undistorted) as text", true, step, maxStep);
                     yield return caller.StartCoroutine(RunExportModelAsTextCommand(caller, GetDense0Dir(workspace), displayProgressBar, stopOnError, progressBarParams));
-                    // Display the parsed camera setup in the Scene view.
-                    caller.Deselected();
-                    caller.Selected();
+                    // Change the workspace and the data directory to the one created in the dense folder.
+                    // This should be done after the model is exported as text in the dense folder.
+                    workspace = ChangeWorkspaceAfterSparseReconstruction(caller.dataHandler);
+                    Debug.Log(GeneralToolkit.FormatScriptMessage(typeof(COLMAPConnector), "Changed data directory to: " + workspace + "."));
                     yield return null;
                 }
                 // For each step, continue only if the user does not cancel the process.

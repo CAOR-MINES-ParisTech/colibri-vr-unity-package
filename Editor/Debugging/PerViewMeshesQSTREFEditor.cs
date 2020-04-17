@@ -81,7 +81,7 @@ namespace COLIBRIVR.Debugging
                 // Enable the user to generate the mesh.
                 GeneralToolkit.EditorNewSection("Generate");
                 bool isGUIEnabled = GUI.enabled;
-                GUI.enabled = (_targetProcessing.sourcePerViewGeometryCount > 0);
+                GUI.enabled = (_targetProcessing.dataHandler.sourcePerViewCount > 0);
                 SectionGenerateButton();
                 GUI.enabled = isGUIEnabled;
             }
@@ -104,7 +104,7 @@ namespace COLIBRIVR.Debugging
         protected void SubsectionSourceCameraIndex()
         {
             CameraSetup cameraSetup = _targetProcessing.cameraSetup;
-            int sliderMaxInt = _targetProcessing.sourcePerViewGeometryCount;
+            int sliderMaxInt = _targetProcessing.dataHandler.sourcePerViewCount;
             int newPreviewIndex = sliderMaxInt;
             if(sliderMaxInt > 0)
             {

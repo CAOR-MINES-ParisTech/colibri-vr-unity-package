@@ -117,7 +117,7 @@ namespace COLIBRIVR.ExternalConnectors
             tooltip += "Camera setup information will be stored at: \"" + COLMAPConnector.GetCamerasFile(workspace) + "\".";
             // Check if this option is available.
             bool isGUIEnabled = GUI.enabled;
-            GUI.enabled = isGUIEnabled && (processingCaller.sourceColorCount > 1) && !(workspace.Contains(COLMAPConnector.dense0DirName)) && Application.isPlaying;
+            GUI.enabled = isGUIEnabled && (processingCaller.dataHandler.sourceColorCount > 1) && !(workspace.Contains(COLMAPConnector.dense0DirName)) && Application.isPlaying;
             GeneralToolkit.EditorRequirePlayMode(ref tooltip);
             // Display a button to launch the helper method.
             bool hasPressed = GeneralToolkit.EditorWordWrapLeftButton(new GUIContent("Run", tooltip), new GUIContent(label, tooltip));

@@ -83,6 +83,9 @@ namespace COLIBRIVR
         public List<string> bundledAssetsNames;
         public List<System.Type> bundledAssetsMethodTypes;
         public bool generateColliders;
+        public int sourceColorCount;
+        public int sourcePerViewCount;
+        public int sourceGlobalCount;
 
         [SerializeField] private Processing.Processing _processingCaller;
         [SerializeField] private string _dataDirectory;
@@ -113,6 +116,9 @@ namespace COLIBRIVR
         {
             _processingCaller = null;
             _dataDirectory = null;
+            sourceColorCount = 0;
+            sourcePerViewCount = 0;
+            sourceGlobalCount = 0;
 #if UNITY_EDITOR
             ChangeDataDirectory(pathToDataFolder);
 #endif //UNITY_EDITOR
@@ -136,6 +142,7 @@ namespace COLIBRIVR
                 return;
             SerializedObject serializedObject = new SerializedObject(this);
             serializedObject.Update();
+            _dataDirectory = newValue;
             SerializedProperty propertyDataDirectory = serializedObject.FindProperty(_propertyNameDataDirectory);
             propertyDataDirectory.stringValue = newValue;
             serializedObject.ApplyModifiedProperties();
@@ -254,31 +261,30 @@ namespace COLIBRIVR
         /// <summary>
         /// Checks the source data directory for color images, depth maps, and meshes.
         /// </summary>
-        /// <param name="colorCount"></param> Outputs the number of color data samples.
-        /// <param name="perViewCount"></param> Outputs the number of per-view geometry samples.
-        /// <param name="globalCount"></param> Outputs the number of global geometry samples.
-        /// <param name="summary"></param> Outputs a summary of this information as a text string.
-        public void CheckStatusOfSourceData(out int colorCount, out int perViewCount, out int globalCount, out string summaryInfo)
+        public void CheckStatusOfSourceData()
         {
             string[] extensions = new string[] {".png",".jpg"};
             // Check the color directory for color images.
             if(Directory.Exists(colorDirectory))
-                colorCount = GeneralToolkit.GetFilesByExtension(colorDirectory, extensions).Length;
+                sourceColorCount = GeneralToolkit.GetFilesByExtension(colorDirectory, extensions).Length;
             else
-                colorCount = 0;
+                sourceColorCount = 0;
             // Check the depth directory for depth maps.
             if(Directory.Exists(depthDirectory))
-                perViewCount = GeneralToolkit.GetFilesByExtension(depthDirectory, extensions).Length;
+                sourcePerViewCount = GeneralToolkit.GetFilesByExtension(depthDirectory, extensions).Length;
             else
-                perViewCount = 0;
+                sourcePerViewCount = 0;
             extensions = new string[] {".asset", ".obj",".fbx"};
             // Check the root directory for meshes.
-            globalCount = GeneralToolkit.GetFilesByExtension(dataDirectory, extensions).Length;
-            // Compile all of this information into an output string.
-            string colorInfo = colorCount + " color image" + ((colorCount == 1) ? string.Empty : "s") + ", ";
-            string depthInfo = perViewCount + " depth map" + ((perViewCount == 1) ? string.Empty : "s") + ", ";
-            string meshInfo = globalCount + " mesh" + ((globalCount == 1) ? string.Empty : "es") + ".";
-            summaryInfo = "This directory contains: " + colorInfo + depthInfo + meshInfo;
+            sourceGlobalCount = GeneralToolkit.GetFilesByExtension(dataDirectory, extensions).Length;
+            // Compile all of this information into an output string for the processing caller.
+            if(_processingCaller != null)
+            {
+                string colorInfo = sourceColorCount + " color image" + ((sourceColorCount == 1) ? string.Empty : "s") + ", ";
+                string depthInfo = sourcePerViewCount + " depth map" + ((sourcePerViewCount == 1) ? string.Empty : "s") + ", ";
+                string meshInfo = sourceGlobalCount + " mesh" + ((sourceGlobalCount == 1) ? string.Empty : "es") + ".";
+                _processingCaller.sourceDataInfo = "This directory contains: " + colorInfo + depthInfo + meshInfo;
+            } 
         }
 
         /// <summary>

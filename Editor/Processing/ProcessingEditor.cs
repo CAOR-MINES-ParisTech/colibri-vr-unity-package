@@ -156,7 +156,7 @@ namespace COLIBRIVR.Processing
             bool isThereACompatibleMethod = false;
             for(int iter = 0; iter < topmostMethods.Count; iter++)
             {
-                arrayIsMethodCompatible[iter] = topmostMethods[iter].IsCompatible(_targetObject.sourceColorCount, _targetObject.sourcePerViewGeometryCount, _targetObject.sourceGlobalGeometryCount);
+                arrayIsMethodCompatible[iter] = topmostMethods[iter].IsCompatible(_targetObject.dataHandler.sourceColorCount, _targetObject.dataHandler.sourcePerViewCount, _targetObject.dataHandler.sourceGlobalCount);
                 if(arrayIsMethodCompatible[iter])
                     isThereACompatibleMethod = true;
             }
@@ -183,7 +183,7 @@ namespace COLIBRIVR.Processing
         private void SectionProcessAndBundle()
         {
             bool isGUIEnabled = GUI.enabled;
-            GUI.enabled = isGUIEnabled && (_targetObject.sourceColorCount > 0 || _targetObject.sourcePerViewGeometryCount > 0 || _targetObject.sourceGlobalGeometryCount > 0);
+            GUI.enabled = isGUIEnabled && (_targetObject.dataHandler.sourceColorCount > 0 || _targetObject.dataHandler.sourcePerViewCount > 0 || _targetObject.dataHandler.sourceGlobalCount > 0);
             EditorGUILayout.Space();
             string label = "Process source data";
             string tooltip = "Processed assets will be stored at \"" + _targetObject.dataHandler.processedDataDirectory + "\".";

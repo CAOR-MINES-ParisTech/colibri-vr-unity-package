@@ -98,9 +98,8 @@ namespace COLIBRIVR.DatasetHelpers
             string outPath;
             GeneralToolkit.EditorPathSearch(out clicked, out outPath, PathType.Directory, _targetObject.dataHandler.dataDirectory, searchTitle, tooltip, Color.grey);
             _targetObject.dataHandler.ChangeDataDirectory(outPath, clicked);
-            int perViewMeshCount; int globalMeshCount; string summaryInfo;
-            _targetObject.dataHandler.CheckStatusOfSourceData(out _targetObject.colorCount, out perViewMeshCount, out globalMeshCount, out summaryInfo);
-            EditorGUILayout.LabelField("Detected color images: " + _targetObject.colorCount +  ".");
+            _targetObject.dataHandler.CheckStatusOfSourceData();
+            EditorGUILayout.LabelField("Detected color images: " + _targetObject.dataHandler.sourceColorCount +  ".");
         }
 
         /// <summary>

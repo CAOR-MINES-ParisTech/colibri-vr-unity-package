@@ -80,12 +80,12 @@ namespace COLIBRIVR.Rendering
             base.Reset();
             blendCamCount = 2;
             targetFramerate = 60;
-            maxFrameCountForProcessing = 10;
+            maxFrameCountForProcessing = 3;
             initialized = false;
             _maxBlendAngle = 180f;
             _resolutionWeight = 0.2f;
             _depthCorrectionFactor = 0.1f;
-            _globalTextureMapWeight = 0.1f;
+            _globalTextureMapWeight = 0f;
             _optimizeForHighFramerates = true;
         }
 
@@ -187,7 +187,8 @@ namespace COLIBRIVR.Rendering
         /// <returns></returns> The array of such methods.
         public ProcessingMethod[] GetULRSceneRepresentationMethods()
         {
-            return new ProcessingMethod[] { PMColorTextureArray, PMGlobalTextureMap, PMGlobalMeshEF, PMDepthTextureArray };
+            // Note that the global texture map is optional.
+            return new ProcessingMethod[] { PMColorTextureArray, PMGlobalMeshEF, PMDepthTextureArray };
         }
 
         /// <summary>
@@ -261,11 +262,14 @@ namespace COLIBRIVR.Rendering
             for(int i = 0; i < materials.Length; i++)
                 materials[i] = blendingMaterial;
             renderer.materials = materials;
-            MaterialPropertyBlock propertyBlock = new MaterialPropertyBlock();
-            for(int i = 0; i < materials.Length; i++)
+            if(PMGlobalTextureMap.textureMaps != null)
             {
-                propertyBlock.SetTexture(GlobalTextureMap.shaderNameGlobalTextureMap, PMGlobalTextureMap.textureMaps[i]);
-                renderer.SetPropertyBlock(propertyBlock, i);
+                MaterialPropertyBlock propertyBlock = new MaterialPropertyBlock();
+                for(int i = 0; i < PMGlobalTextureMap.textureMaps.Length; i++)
+                {
+                    propertyBlock.SetTexture(GlobalTextureMap.shaderNameGlobalTextureMap, PMGlobalTextureMap.textureMaps[i]);
+                    renderer.SetPropertyBlock(propertyBlock, i);
+                }
             }
         }
 

@@ -98,6 +98,8 @@ namespace COLIBRIVR.ExternalConnectors
             // Launch the command.
             string command = FormatBlenderCommand(_convertPLYtoOBJFileName, inputFilePath, outputFilePath);
             yield return caller.StartCoroutine(GeneralToolkit.RunCommandCoroutine(typeof(BlenderConnector), command, _externalPythonScriptsDir, displayProgressBar, storeFaceCount, _harmlessWarnings, stopOnError, progressBarParams));
+            // Update the data handler to see the converted mesh object.
+            caller.dataHandler.CheckStatusOfSourceData();
             // Indicate to the user that the process has ended.
             GeneralToolkit.ResetCancelableProgressBar(false, false);
             // Update the GUI to indicate that a mesh has been created.
