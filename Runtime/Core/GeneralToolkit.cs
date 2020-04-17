@@ -690,6 +690,8 @@ namespace COLIBRIVR
         public static IEnumerator RunCommandCoroutine(System.Type callerType, string command, string workingDirectory = null, bool displayProgressBar = false,
             System.Diagnostics.DataReceivedEventHandler actionToPerform = null, string harmlessWarnings = null, bool stopOnError = false, string[] progressBarParams = null)
         {
+            // Wait one frame. Somehow this removes EditorGUILayout errors that otherwise appear from time to time.
+            yield return null;
             // Indicate to the user that the command has been launched.
             Debug.Log(FormatScriptMessage(callerType, "Running command: " + command));
             // Create a process with the specified command.
@@ -730,6 +732,7 @@ namespace COLIBRIVR
             }
             // Wait for the process to end naturally or for the user to end it, while monitoring its output.
             string logSegment = string.Empty;
+            string progressBarInfo = string.Empty;
             bool forceExit = false;
             bool naturalExit = false;
             int outputDataLineCount = 0;
@@ -777,15 +780,16 @@ namespace COLIBRIVR
                             }
                         }
                     }
-                    // If a progress bar is displayed, use it to display log messages before they are cleared.
+                    // Update the information to be displayed in the progress bar.
                     if(displayProgressBar)
-                    {
-                        string progressBarInfo = "Log " + ToString(outputDataLineCount) + ": " + _outputDataReceived[_outputDataReceived.Count - 1];
-                        UpdateCancelableProgressBar(callerType, false, false, false, -1, "", progressBarInfo, "");
-                    }
+                        progressBarInfo = "Log " + ToString(outputDataLineCount) + ": " + _outputDataReceived[_outputDataReceived.Count - 1];
+                    // Clear the log messages.
                     outputDataLineCount += _outputDataReceived.Count;
                     _outputDataReceived.Clear();
                 }
+                // If a progress bar is displayed, use it to display log messages.
+                if(displayProgressBar)
+                    UpdateCancelableProgressBar(callerType, false, false, false, -1, "", progressBarInfo, "");
                 // If the user cancels the process using the progress bar, force the process to exit.
                 if(displayProgressBar && progressBarCanceled)
                     forceExit = true;
@@ -978,8 +982,12 @@ namespace COLIBRIVR
                     progressBarInfo += " About " + minutesLabel + secondsLabel + "left.";
                 }
             }
-            // Display the progress bar. If the user clicks to cancel it, display the exit message.
-            if(EditorUtility.DisplayCancelableProgressBar(progressBarTitle, progressBarInfo, _progressBarValue))
+            // Display the progress bar.
+            bool canceled = EditorUtility.DisplayCancelableProgressBar(progressBarTitle, progressBarInfo, _progressBarValue);
+            // Repaint all views. This prevents the progress bar from flickering.
+            UnityEditorInternal.InternalEditorUtility.RepaintAllViews();
+            // If the user clicks to cancel the progress bar, display the exit message.
+            if(canceled)
             {
                 Debug.Log(FormatScriptMessage(callerType, exitMessage));
                 progressBarCanceled = true;
@@ -993,15 +1001,18 @@ namespace COLIBRIVR
         /// <param name="clearConsole"></param> True if the console should be cleared, false otherwise.
         public static void ResetCancelableProgressBar(bool hideGUI, bool clearConsole)
         {
+            // Hide the GUI and clear the console if desired.
             displayGUI = !hideGUI;
             if(clearConsole)
                 ClearConsole();
+            // Reset the progress bar info.
             _progressBarValue = 0f;
             _progressBarMaxIter = 1;
             _progressBarTitle = string.Empty;
             _progressBarInfo = string.Empty;
             _progressBarExitMessage = string.Empty;
             progressBarCanceled = false;
+            // Clear the progress bar.
             EditorUtility.ClearProgressBar();
         }
         

@@ -51,25 +51,14 @@ namespace COLIBRIVR.ExternalConnectors
         /// <param name="displayProgressBar"></param> Outputs whether to display a progress bar.
         /// <param name="stopOnError"></param> Outputs whether to stop on error.
         /// <param name="progressBarParams"></param> Outputs paramters for the progress bar.
-        private static void InitBlenderCoroutine(bool clearConsole, out bool displayProgressBar, out bool stopOnError, out string[] progressBarParams)
+        private static void InitBlenderCoroutineParams(bool clearConsole, out bool displayProgressBar, out bool stopOnError, out string[] progressBarParams)
         {
-            // Indicate to the user that the process has started.
-            GeneralToolkit.ResetCancelableProgressBar(true, clearConsole);
             // Initialize the command parameters.
             displayProgressBar = true;
             stopOnError = true;
             progressBarParams = new string[3];
             progressBarParams[0] = "2";
             progressBarParams[2] = "Processing canceled by user.";
-        }
-
-        /// <summary>
-        /// Clears a coroutine that launched a Blender python command.
-        /// </summary>
-        private static void ClearBlenderCoroutine()
-        {
-            // Indicate to the user that the process has ended.
-            GeneralToolkit.ResetCancelableProgressBar(false, false);
         }
 
         /// <summary>
@@ -100,15 +89,17 @@ namespace COLIBRIVR.ExternalConnectors
         /// <returns></returns>
         public static IEnumerator RunConvertPLYtoOBJCoroutine(Processing.Processing caller, string inputFilePath, string outputFilePath, System.Diagnostics.DataReceivedEventHandler storeFaceCount)
         {
-            // Initialize the coroutine.
+            // Indicate to the user that the process has started.
+            GeneralToolkit.ResetCancelableProgressBar(true, true);
+            // Initialize the coroutine parameters.
             bool displayProgressBar; bool stopOnError; string[] progressBarParams;
-            InitBlenderCoroutine(true, out displayProgressBar, out stopOnError, out progressBarParams);
+            InitBlenderCoroutineParams(true, out displayProgressBar, out stopOnError, out progressBarParams);
             progressBarParams[1] = "Convert .PLY to .OBJ";
             // Launch the command.
             string command = FormatBlenderCommand(_convertPLYtoOBJFileName, inputFilePath, outputFilePath);
             yield return caller.StartCoroutine(GeneralToolkit.RunCommandCoroutine(typeof(BlenderConnector), command, _externalPythonScriptsDir, displayProgressBar, storeFaceCount, _harmlessWarnings, stopOnError, progressBarParams));
-            // Clear the coroutine.
-            ClearBlenderCoroutine();
+            // Indicate to the user that the process has ended.
+            GeneralToolkit.ResetCancelableProgressBar(false, false);
             // Update the GUI to indicate that a mesh has been created.
             caller.Deselected();
             caller.Selected();
@@ -123,15 +114,17 @@ namespace COLIBRIVR.ExternalConnectors
         /// <returns></returns>
         public static IEnumerator RunCheckOBJMeshInfoCoroutine(MonoBehaviour caller, string inputFilePath, System.Diagnostics.DataReceivedEventHandler storeFaceCount)
         {
-            // Initialize the coroutine.
+            // Indicate to the user that the process has started.
+            GeneralToolkit.ResetCancelableProgressBar(true, false);
+            // Initialize the coroutine parameters.
             bool displayProgressBar; bool stopOnError; string[] progressBarParams;
-            InitBlenderCoroutine(false, out displayProgressBar, out stopOnError, out progressBarParams);
+            InitBlenderCoroutineParams(false, out displayProgressBar, out stopOnError, out progressBarParams);
             progressBarParams[1] = "Check .OBJ mesh information";
             // Launch the command.
             string command = FormatBlenderCommand(_checkOBJMeshInfoFileName, inputFilePath);
             yield return caller.StartCoroutine(GeneralToolkit.RunCommandCoroutine(typeof(BlenderConnector), command, _externalPythonScriptsDir, displayProgressBar, storeFaceCount, _harmlessWarnings, stopOnError, progressBarParams));
-            // Clear the coroutine.
-            ClearBlenderCoroutine();
+            // Indicate to the user that the process has ended.
+            GeneralToolkit.ResetCancelableProgressBar(false, false);
         }
 
         /// <summary>
@@ -144,15 +137,17 @@ namespace COLIBRIVR.ExternalConnectors
         /// <returns></returns>
         public static IEnumerator RunSimplifyOBJCoroutine(MonoBehaviour caller, string inputFilePath, string outputFilePath, System.Diagnostics.DataReceivedEventHandler storeFaceCount)
         {
-            // Initialize the coroutine.
+            // Indicate to the user that the process has started.
+            GeneralToolkit.ResetCancelableProgressBar(true, true);
+            // Initialize the coroutine parameters.
             bool displayProgressBar; bool stopOnError; string[] progressBarParams;
-            InitBlenderCoroutine(true, out displayProgressBar, out stopOnError, out progressBarParams);
+            InitBlenderCoroutineParams(true, out displayProgressBar, out stopOnError, out progressBarParams);
             progressBarParams[1] = "Convert .PLY to .OBJ";
             // Launch the command.
             string command = FormatBlenderCommand(_simplifyOBJFileName, inputFilePath, outputFilePath);
             yield return caller.StartCoroutine(GeneralToolkit.RunCommandCoroutine(typeof(BlenderConnector), command, _externalPythonScriptsDir, displayProgressBar, storeFaceCount, _harmlessWarnings, stopOnError, progressBarParams));
-            // Clear the coroutine.
-            ClearBlenderCoroutine();
+            // Indicate to the user that the process has ended.
+            GeneralToolkit.ResetCancelableProgressBar(false, false);
         }
 
         /// <summary>
@@ -164,15 +159,17 @@ namespace COLIBRIVR.ExternalConnectors
         /// <returns></returns>
         public static IEnumerator RunSmartUVProjectOBJCoroutine(MonoBehaviour caller, string inputFilePath, string outputFilePath)
         {
-            // Initialize the coroutine.
+            // Indicate to the user that the process has started.
+            GeneralToolkit.ResetCancelableProgressBar(true, true);
+            // Initialize the coroutine parameters.
             bool displayProgressBar; bool stopOnError; string[] progressBarParams;
-            InitBlenderCoroutine(true, out displayProgressBar, out stopOnError, out progressBarParams);
+            InitBlenderCoroutineParams(true, out displayProgressBar, out stopOnError, out progressBarParams);
             progressBarParams[1] = "Smart UV Project on .OBJ";
             // Launch the command.
             string command = FormatBlenderCommand(_smartUVProjectOBJFileName, inputFilePath, outputFilePath);
             yield return caller.StartCoroutine(GeneralToolkit.RunCommandCoroutine(typeof(BlenderConnector), command, _externalPythonScriptsDir, displayProgressBar, null, _harmlessWarnings, stopOnError, progressBarParams));
-            // Clear the coroutine.
-            ClearBlenderCoroutine();
+            // Indicate to the user that the process has ended.
+            GeneralToolkit.ResetCancelableProgressBar(false, false);
         }
 
 #endregion //STATIC_METHODS
