@@ -114,11 +114,11 @@ namespace COLIBRIVR.DatasetHelpers
             tooltip = "Original position values from the Stanford Light Field Archive will be repositioned around their mean value, to result in a centered object.";
             _propertyRepositionAroundCenter.boolValue = EditorGUILayout.Toggle(new GUIContent(label, tooltip), _propertyRepositionAroundCenter.boolValue);
             bool isGUIEnabled = GUI.enabled;
-            GUI.enabled = isGUIEnabled && _targetObject.colorCount > 0;
+            GUI.enabled = isGUIEnabled && _targetObject.dataHandler.sourceColorCount > 0;
             EditorGUILayout.Space();
             label = "Parse and save";
             tooltip = "Camera setup will be parsed and saved here: \"" + _targetObject.dataHandler.dataDirectory + "\".";
-            if(_targetObject.colorCount < 1)
+            if(_targetObject.dataHandler.sourceColorCount < 1)
                 tooltip = "No color images were found in the \"images\" folder of the directory: \"" + _targetObject.dataHandler.dataDirectory + "\".";
             if(GUILayout.Button(new GUIContent(label, tooltip)))
             {

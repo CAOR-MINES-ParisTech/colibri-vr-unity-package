@@ -32,7 +32,6 @@ namespace COLIBRIVR.DatasetHelpers
 
 #region FIELDS
 
-        public int colorCount;
         public float scaleFactor;
         public bool repositionAroundCenter;
 
