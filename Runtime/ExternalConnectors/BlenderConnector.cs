@@ -36,7 +36,7 @@ namespace COLIBRIVR.ExternalConnectors
         private static string _checkOBJMeshInfoFileName { get { return "Blender_CheckOBJMeshInfo.py"; } }
         private static string _simplifyOBJFileName { get { return "Blender_SimplifyOBJ.py"; } }
         private static string _smartUVProjectOBJFileName { get { return "Blender_SmartUVProjectOBJ.py"; } }
-        private static string _harmlessWarnings { get { return "AL lib: UpdateDeviceParams: Failed to set 44100hz, got 48000hz instead"; } }
+        private static string[] _harmlessWarnings { get { return new string[] {"Failed to set 44100hz, got 48000hz instead", "Failed to set 48000hz, got 44100hz instead"}; } }
 
 #endregion //STATIC_PROPERTIES
 

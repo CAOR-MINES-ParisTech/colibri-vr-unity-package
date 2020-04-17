@@ -678,17 +678,41 @@ namespace COLIBRIVR
         private static List<string> _errorDataReceived;
 
         /// <summary>
+        /// Checks whether the received log message is just a harmless warning.
+        /// </summary>
+        /// <param name="callerType"></param> The type of the caller object.
+        /// <param name="harmlessWarnings"></param> The list of known harmless warnings.
+        /// <param name="logMessage"></param> The received log message.
+        /// <returns></returns>
+        private static bool CheckIsHarmlessWarning(System.Type callerType, string[] harmlessWarnings, string logMessage)
+        {
+            bool isHarmlessWarning = false;
+            string logMessageInvariant = logMessage.ToUpperInvariant();
+            if(logMessageInvariant.StartsWith("WARNING"))
+                isHarmlessWarning = true;
+            else if(harmlessWarnings != null)
+                for(int iter = 0; iter < harmlessWarnings.Length; iter++)
+                    if(logMessageInvariant.Contains(harmlessWarnings[iter].ToUpperInvariant()))
+                        isHarmlessWarning = true;
+            if(isHarmlessWarning)
+                Debug.Log(FormatScriptMessage(callerType, "Caught harmless warning: \"" + logMessage + "\"."));
+            return isHarmlessWarning;
+        }
+
+        /// <summary>
         /// Coroutine that runs a command-line process.
         /// </summary>
         /// <param name="callerType"></param> The type of the caller object.
         /// <param name="command"></param> The command as a text string.
         /// <param name="workingDirectory"></param> The working directory from which to run the command.
         /// <param name="displayProgressBar"></param> True if a progress bar is to be displayed, false otherwise.
+        /// <param name="actionToPerform"></param>
+        /// <param name="harmlessWarnings"></param> List of harmless warnings to be ignored when running this command.
         /// <param name="stopOnError"></param> True if the process should be stopped if it returns an error, false otherwise.
         /// <param name="progressBarParams"></param> The progress bar parameters to display if there is a progress bar.
         /// <returns></returns>
         public static IEnumerator RunCommandCoroutine(System.Type callerType, string command, string workingDirectory = null, bool displayProgressBar = false,
-            System.Diagnostics.DataReceivedEventHandler actionToPerform = null, string harmlessWarnings = null, bool stopOnError = false, string[] progressBarParams = null)
+            System.Diagnostics.DataReceivedEventHandler actionToPerform = null, string[] harmlessWarnings = null, bool stopOnError = false, string[] progressBarParams = null)
         {
             // Wait one frame. Somehow this removes EditorGUILayout errors that otherwise appear from time to time.
             yield return null;
@@ -743,13 +767,27 @@ namespace COLIBRIVR
                 // If there are error messages, display them. If desired, stop the process afterwards.
                 if(_errorDataReceived.Count > 0)
                 {
-                    UnityEngine.Debug.LogError(FormatScriptMessage(callerType, "Errors were returned, please consult the log message for details."));
-                    string errorMessages = string.Empty;
+                    // Loop over the received error messages.
                     for(int i = 0; i < _errorDataReceived.Count; i++)
-                        errorMessages += _errorDataReceived[i] + "\n";
-                    UnityEngine.Debug.LogError(FormatScriptMessage(callerType, logHeader + errorMessages));
-                    forceExit = (stopOnError) ? true : forceExit;
+                    {
+                        string logMessage = _errorDataReceived[i];
+                        // Check that the message is not a harmless warning.
+                        bool isHarmlessWarning = CheckIsHarmlessWarning(callerType, harmlessWarnings, logMessage);
+                        // If it is a true error, apply the corresponding consequences.
+                        if(!isHarmlessWarning)
+                        {
+                            UnityEngine.Debug.LogError(FormatScriptMessage(callerType, "Errors were returned, please consult the log message for details."));
+                            string errorMessages = string.Empty;
+                                errorMessages += logMessage + "\n";
+                            UnityEngine.Debug.LogError(FormatScriptMessage(callerType, logHeader + errorMessages));
+                            forceExit = (stopOnError) ? true : forceExit;
+                        }
+                    }
+                    // Clear the received error data.
                     _errorDataReceived.Clear();
+                    // Force the loop exit if needed.
+                    if(forceExit)
+                        break;
                 }
                 // If there are log messages, concatenate them, and display the concatenated list when it becomes too large.
                 if(_outputDataReceived.Count > 0)
@@ -760,18 +798,14 @@ namespace COLIBRIVR
                         if(!string.IsNullOrEmpty(logMessage))
                         {
                             logSegment += logMessage + "\n";
+                            // Display any warnings using the warning message in the console.
+                            CheckIsHarmlessWarning(callerType, harmlessWarnings, logMessage);
                             // Display the log segment if it becomes too large.
                             bool segmentTooLong = (logSegment.Length > maxLineCountBeforeDebug);
                             if(segmentTooLong)
                             {
                                 Debug.Log(FormatScriptMessage(callerType, logHeader + logSegment));
                                 logSegment = string.Empty;
-                            }
-                            // Display any warnings using the warning message in the console.
-                            if(logMessage.ToUpperInvariant().StartsWith("WARNING") || (harmlessWarnings != null && harmlessWarnings.Contains(logMessage)))
-                            {
-                                Debug.LogWarning(FormatScriptMessage(callerType, "Warnings were returned, please consult the log message for details."));
-                                Debug.LogWarning(FormatScriptMessage(callerType, logMessage));
                             }
                             // Handle any error messages appearing in the log as if the process itself had launched an error in the console.
                             else if(logMessage.ToUpperInvariant().StartsWith("ERROR"))
@@ -803,10 +837,15 @@ namespace COLIBRIVR
                 Debug.Log(FormatScriptMessage(callerType, logHeader + logSegment));
             // If the exit was not forced, indicate that the process has successfully finished.
             if(naturalExit)
+            {
                 Debug.Log(FormatScriptMessage(callerType, "Finished command: " + command));
+            }
             // If the exit was forced, indicate that it was canceled by the user, as this prevents further processes from being launched immediately afterwards.
             else
+            {
                 progressBarCanceled = true;
+                Debug.Log(FormatScriptMessage(callerType, "Command was interrupted by force: " + command));
+            }
             // Clean up any created objects.
             process.Dispose();
             process = null;
