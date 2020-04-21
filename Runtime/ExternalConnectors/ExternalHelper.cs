@@ -98,7 +98,8 @@ namespace COLIBRIVR.ExternalConnectors
         /// </summary>
         public virtual void OnDestroy()
         {
-            if(_loadedMeshFullPath != string.Empty && EditorApplication.isPlaying && GeneralToolkit.IsStartingNewScene())
+            bool isInResources = _loadedMeshFullPath.Contains(COLIBRIVRSettings.settingsResourcesAbsolutePath);
+            if(isInResources && EditorApplication.isPlaying && GeneralToolkit.IsStartingNewScene())
             {
                 GeneralToolkit.Delete(_loadedMeshFullPath);
                 AssetDatabase.Refresh();
