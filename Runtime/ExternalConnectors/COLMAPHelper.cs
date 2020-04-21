@@ -180,7 +180,7 @@ namespace COLIBRIVR.ExternalConnectors
                 // If the user confirms, update the workspace directory and launch the method.
                 if(EditorUtility.DisplayDialog(label, tooltip, "Yes", "No"))
                 {
-                    StartCoroutine(COLMAPConnector.RunDenseReconstructionCoroutine(this, workspace));
+                    StartCoroutine(COLMAPConnector.RunDenseReconstructionCoroutine(this, workspace, cameraSetup.cameraModels.Length));
                 }
             }
             // Reset the GUI.

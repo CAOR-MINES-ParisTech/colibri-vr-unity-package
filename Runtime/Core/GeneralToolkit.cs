@@ -758,13 +758,8 @@ namespace COLIBRIVR
                 process.BeginOutputReadLine();
                 process.BeginErrorReadLine();
                 // If a progress bar is to be displayed, start displaying it.
-                if(displayProgressBar && progressBarParams != null && progressBarParams.Length == 3)
-                {
-                    int progressBarMaxIter = ParseInt(progressBarParams[0]);
-                    string progressBarTitle = progressBarParams[1];
-                    string exitMessage = progressBarParams[2];
-                    UpdateCancelableProgressBar(callerType, true, false, false, progressBarMaxIter, progressBarTitle, "", exitMessage);
-                }
+                if(displayProgressBar)
+                    UpdateCancelableProgressBarWithParams(callerType, progressBarParams);
             }
             // Add any returned exception to the list of errors.
             catch (System.Exception e)
@@ -1047,6 +1042,22 @@ namespace COLIBRIVR
             {
                 Debug.Log(FormatScriptMessage(callerType, exitMessage));
                 progressBarCanceled = true;
+            }
+        }
+
+        /// <summary>
+        /// Updates the cancelable progress bar with the given progress bar parameters.
+        /// </summary>
+        /// <param name="callerType"></param> The type of the caller object.
+        /// <param name="progressBarParams"></param> The progress bar parameters.
+        public static void UpdateCancelableProgressBarWithParams(System.Type callerType, string[] progressBarParams)
+        { 
+            if(progressBarParams != null && progressBarParams.Length == 3)
+            {
+                int progressBarMaxIter = ParseInt(progressBarParams[0]);
+                string progressBarTitle = progressBarParams[1];
+                string exitMessage = progressBarParams[2];
+                UpdateCancelableProgressBar(callerType, true, false, false, progressBarMaxIter, progressBarTitle, "", exitMessage);
             }
         }
 

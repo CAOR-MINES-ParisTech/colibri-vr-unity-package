@@ -332,21 +332,46 @@ namespace COLIBRIVR.ExternalConnectors
         }
 
         /// <summary>
+        /// Coroutine that updates the progress bar during the dense reconstruction process based on the current depth map count.
+        /// </summary>
+        /// <param name="workspace"></param> The workspace from which to perform this method.
+        /// <param name="imageCount"></param> The number of images in the recovered capture setup.
+        /// <param name="progressBarParams"></param> The parameters for the progress bar.
+        /// <returns></returns>
+        public static IEnumerator UpdateDenseReconstructionProgressBasedOnDepthMapCount(string workspace, int imageCount, string[] progressBarParams)
+        {
+            string depthMapsDir = GetDepthMapsDir(workspace);
+            int expectedDepthMapCount = 2 * imageCount;
+            int currentDepthMapCount = 0;
+            while(currentDepthMapCount < expectedDepthMapCount)
+            {
+                int newDepthMapCount = GeneralToolkit.GetFilesByExtension(depthMapsDir, ".bin").Length;
+                if(newDepthMapCount > currentDepthMapCount)
+                    for(int iter = currentDepthMapCount; iter < newDepthMapCount; iter++)
+                        GeneralToolkit.UpdateCancelableProgressBarWithParams(typeof(COLMAPConnector), progressBarParams);
+                currentDepthMapCount = newDepthMapCount;
+                yield return null;
+            }
+        }
+
+        /// <summary>
         /// Coroutine that runs the dense reconstruction process.
         /// </summary>
         /// <param name="caller"></param> The object calling this method.
         /// <param name="workspace"></param> The workspace from which to perform this method.
+        /// <param name="imageCount"></param> Number of images in the recovered capture setup.
         /// <returns></returns>
-        public static IEnumerator RunDenseReconstructionCoroutine(MonoBehaviour caller, string workspace)
+        public static IEnumerator RunDenseReconstructionCoroutine(MonoBehaviour caller, string workspace, int imageCount)
         {
             // Indicate to the user that the process has started.
             GeneralToolkit.ResetCancelableProgressBar(true, true);
             // Initialize the command parameters.
             bool displayProgressBar = true;
             bool stopOnError = true;
-            string[] progressBarParams = new string[3];
             int maxStep = 3;
-            progressBarParams[0] = GeneralToolkit.ToString(maxStep);
+            string[] progressBarParams = new string[3];
+            int progressBarMaxStep = maxStep + (2*imageCount);
+            progressBarParams[0] = GeneralToolkit.ToString(progressBarMaxStep);
             progressBarParams[2] = "Processing canceled by user.";
             // Launch the different steps of the reconstruction process.
             for(int step = 1; step <= maxStep; step++)
@@ -355,6 +380,7 @@ namespace COLIBRIVR.ExternalConnectors
                 if(step == 1)
                 {
                     progressBarParams[1] = GetProgressBarParamsOne("Stereo", false, step, maxStep);
+                    caller.StartCoroutine(UpdateDenseReconstructionProgressBasedOnDepthMapCount(workspace, imageCount, progressBarParams));
                     yield return caller.StartCoroutine(RunStereoCommand(caller, workspace, displayProgressBar, stopOnError, progressBarParams));
                 }
                 // Step two: launch fusion.
