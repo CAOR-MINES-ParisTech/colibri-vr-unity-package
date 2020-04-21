@@ -602,6 +602,23 @@ namespace COLIBRIVR
             }
         }
 
+        /// <summary>
+        /// Copies the object at the given absolute path to a Resources folder from which it can be loaded.
+        /// </summary>
+        /// <param name="objectPathAbsolute"></param> The object's absolute path.
+        /// <returns></returns> The absolute path of the copied object in a Resources folder.
+        public static string CopyObjectFromPathIntoResources(string objectPathAbsolute)
+        {
+            // Copy the object to the resources folder.
+            string resourceDstFileName = Path.GetFileName(objectPathAbsolute);
+            string resourceDstFullPath = Path.Combine(COLIBRIVRSettings.settingsResourcesAbsolutePath, resourceDstFileName);
+            GeneralToolkit.Replace(PathType.File, objectPathAbsolute, resourceDstFullPath);
+            // Refresh the asset database.
+            AssetDatabase.Refresh();
+            // Return the object's full path in the Resources folder, to be able to load it afterwards.
+            return resourceDstFullPath;
+        }
+
 #endif //UNITY_EDITOR
 
         public static string tempDirectoryRelativePath { get{ return Path.Combine(ToRelativePath(COLIBRIVRSettings.settingsFolderAbsolutePath), _tempDirectoryName); } }
@@ -1123,6 +1140,21 @@ namespace COLIBRIVR
 #endregion //SHADERS
 
 #region MESHES
+
+#if UNITY_EDITOR
+
+        /// <summary>
+        /// Makes the mesh at the given path (in the project) readable, e.g. so that colliders can be added.
+        /// </summary>
+        /// <param name="meshFullPath"></param> The full path to the mesh.
+        public static void MakeMeshReadable(string meshFullPath)
+        {
+            ModelImporter modelImporter = ModelImporter.GetAtPath(GeneralToolkit.ToRelativePath(meshFullPath)) as ModelImporter;
+            modelImporter.isReadable = true;
+            modelImporter.SaveAndReimport();
+        }
+
+#endif //UNITY_EDITOR
 
         /// <summary>
         /// Transforms a mesh's vertices and normals by the values of the given transform.

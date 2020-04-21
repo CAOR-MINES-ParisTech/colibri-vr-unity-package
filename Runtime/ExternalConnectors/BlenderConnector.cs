@@ -82,12 +82,12 @@ namespace COLIBRIVR.ExternalConnectors
         /// <summary>
         /// Coroutine that converts a .PLY mesh to a .OBJ file.
         /// </summary>
-        /// <param name="caller"></param> The processing object calling this method.
+        /// <param name="caller"></param> The Blender helper object calling this method.
         /// <param name="inputFilePath"></param> The full path to the input .PLY file.
         /// <param name="outputFilePath"></param> The full path to the output .OBJ file.
         /// <param name="storeFaceCount"></param> Action that stores the mesh's face count.
         /// <returns></returns>
-        public static IEnumerator RunConvertPLYtoOBJCoroutine(Processing.Processing caller, string inputFilePath, string outputFilePath, System.Diagnostics.DataReceivedEventHandler storeFaceCount)
+        public static IEnumerator RunConvertPLYtoOBJCoroutine(BlenderHelper caller, string inputFilePath, string outputFilePath, System.Diagnostics.DataReceivedEventHandler storeFaceCount)
         {
             // Indicate to the user that the process has started.
             GeneralToolkit.ResetCancelableProgressBar(true, true);
@@ -100,44 +100,43 @@ namespace COLIBRIVR.ExternalConnectors
             yield return caller.StartCoroutine(GeneralToolkit.RunCommandCoroutine(typeof(BlenderConnector), command, _externalPythonScriptsDir, displayProgressBar, storeFaceCount, _harmlessWarnings, stopOnError, progressBarParams));
             // Update the data handler to see the converted mesh object.
             caller.dataHandler.CheckStatusOfSourceData();
+            // Display the converted mesh in the Scene view.
+            caller.DisplayMeshInSceneView(outputFilePath);
             // Indicate to the user that the process has ended.
             GeneralToolkit.ResetCancelableProgressBar(false, false);
-            // Update the GUI to indicate that a mesh has been created.
-            caller.Deselected();
-            caller.Selected();
         }
 
-        /// <summary>
-        /// Coroutine that checks an .OBJ's mesh information.
-        /// </summary>
-        /// <param name="caller"></param> The object calling this method.
-        /// <param name="inputFilePath"></param> The full path to the input .OBJ file.
-        /// <param name="storeFaceCount"></param> Action that stores the mesh's face count.
-        /// <returns></returns>
-        public static IEnumerator RunCheckOBJMeshInfoCoroutine(MonoBehaviour caller, string inputFilePath, System.Diagnostics.DataReceivedEventHandler storeFaceCount)
-        {
-            // Indicate to the user that the process has started.
-            GeneralToolkit.ResetCancelableProgressBar(true, false);
-            // Initialize the coroutine parameters.
-            bool displayProgressBar; bool stopOnError; string[] progressBarParams;
-            InitBlenderCoroutineParams(false, out displayProgressBar, out stopOnError, out progressBarParams);
-            progressBarParams[1] = "Check .OBJ mesh information";
-            // Launch the command.
-            string command = FormatBlenderCommand(_checkOBJMeshInfoFileName, inputFilePath);
-            yield return caller.StartCoroutine(GeneralToolkit.RunCommandCoroutine(typeof(BlenderConnector), command, _externalPythonScriptsDir, displayProgressBar, storeFaceCount, _harmlessWarnings, stopOnError, progressBarParams));
-            // Indicate to the user that the process has ended.
-            GeneralToolkit.ResetCancelableProgressBar(false, false);
-        }
+        // /// <summary>
+        // /// Coroutine that checks an .OBJ's mesh information.
+        // /// </summary>
+        // /// <param name="caller"></param> The object calling this method.
+        // /// <param name="inputFilePath"></param> The full path to the input .OBJ file.
+        // /// <param name="storeFaceCount"></param> Action that stores the mesh's face count.
+        // /// <returns></returns>
+        // public static IEnumerator RunCheckOBJMeshInfoCoroutine(MonoBehaviour caller, string inputFilePath, System.Diagnostics.DataReceivedEventHandler storeFaceCount)
+        // {
+        //     // Indicate to the user that the process has started.
+        //     GeneralToolkit.ResetCancelableProgressBar(true, false);
+        //     // Initialize the coroutine parameters.
+        //     bool displayProgressBar; bool stopOnError; string[] progressBarParams;
+        //     InitBlenderCoroutineParams(false, out displayProgressBar, out stopOnError, out progressBarParams);
+        //     progressBarParams[1] = "Check .OBJ mesh information";
+        //     // Launch the command.
+        //     string command = FormatBlenderCommand(_checkOBJMeshInfoFileName, inputFilePath);
+        //     yield return caller.StartCoroutine(GeneralToolkit.RunCommandCoroutine(typeof(BlenderConnector), command, _externalPythonScriptsDir, displayProgressBar, storeFaceCount, _harmlessWarnings, stopOnError, progressBarParams));
+        //     // Indicate to the user that the process has ended.
+        //     GeneralToolkit.ResetCancelableProgressBar(false, false);
+        // }
 
         /// <summary>
         /// Coroutine that simplifies the mesh in a .OBJ file using the decimation modifier.
         /// </summary>
-        /// <param name="caller"></param> The object calling this method.
+        /// <param name="caller"></param> The Blender helper calling this method.
         /// <param name="inputFilePath"></param> The full path to the input .OBJ file.
         /// <param name="outputFilePath"></param> The full path to the output .OBJ file.
         /// <param name="storeFaceCount"></param> Action that stores the mesh's face count.
         /// <returns></returns>
-        public static IEnumerator RunSimplifyOBJCoroutine(MonoBehaviour caller, string inputFilePath, string outputFilePath, System.Diagnostics.DataReceivedEventHandler storeFaceCount)
+        public static IEnumerator RunSimplifyOBJCoroutine(BlenderHelper caller, string inputFilePath, string outputFilePath, System.Diagnostics.DataReceivedEventHandler storeFaceCount)
         {
             // Indicate to the user that the process has started.
             GeneralToolkit.ResetCancelableProgressBar(true, true);
@@ -148,6 +147,8 @@ namespace COLIBRIVR.ExternalConnectors
             // Launch the command.
             string command = FormatBlenderCommand(_simplifyOBJFileName, inputFilePath, outputFilePath);
             yield return caller.StartCoroutine(GeneralToolkit.RunCommandCoroutine(typeof(BlenderConnector), command, _externalPythonScriptsDir, displayProgressBar, storeFaceCount, _harmlessWarnings, stopOnError, progressBarParams));
+            // Display the simplified mesh in the Scene view.
+            caller.DisplayMeshInSceneView(outputFilePath);
             // Indicate to the user that the process has ended.
             GeneralToolkit.ResetCancelableProgressBar(false, false);
         }
@@ -155,11 +156,11 @@ namespace COLIBRIVR.ExternalConnectors
         /// <summary>
         /// Coroutine that applies the Smart UV Project algorithm to the given .OBJ file.
         /// </summary>
-        /// <param name="caller"></param> The object calling this method.
+        /// <param name="caller"></param> The Blender helper calling this method.
         /// <param name="inputFilePath"></param> The full path to the input .OBJ file.
         /// <param name="outputFilePath"></param> The full path to the output .OBJ file.
         /// <returns></returns>
-        public static IEnumerator RunSmartUVProjectOBJCoroutine(MonoBehaviour caller, string inputFilePath, string outputFilePath)
+        public static IEnumerator RunSmartUVProjectOBJCoroutine(BlenderHelper caller, string inputFilePath, string outputFilePath)
         {
             // Indicate to the user that the process has started.
             GeneralToolkit.ResetCancelableProgressBar(true, true);
@@ -170,6 +171,8 @@ namespace COLIBRIVR.ExternalConnectors
             // Launch the command.
             string command = FormatBlenderCommand(_smartUVProjectOBJFileName, inputFilePath, outputFilePath);
             yield return caller.StartCoroutine(GeneralToolkit.RunCommandCoroutine(typeof(BlenderConnector), command, _externalPythonScriptsDir, displayProgressBar, null, _harmlessWarnings, stopOnError, progressBarParams));
+            // Display the uv-mapped mesh in the Scene view.
+            caller.DisplayMeshInSceneView(outputFilePath);
             // Indicate to the user that the process has ended.
             GeneralToolkit.ResetCancelableProgressBar(false, false);
         }

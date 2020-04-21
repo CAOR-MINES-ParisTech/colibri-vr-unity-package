@@ -52,7 +52,7 @@ namespace COLIBRIVR.ExternalConnectors
             SerializedObject serializedObject = new SerializedObject(this);
             serializedObject.Update();
             SubsectionConvertPLYtoOBJ();
-            SubsectionCheckOBJMeshInfo();
+            // SubsectionCheckOBJMeshInfo();
             SubsectionSimplifyOBJ(serializedObject);
             SubsectionSmartUVProjectOBJ();
             serializedObject.ApplyModifiedProperties();
@@ -93,53 +93,53 @@ namespace COLIBRIVR.ExternalConnectors
             // Display a button to launch the helper method.
             bool hasPressed = GeneralToolkit.EditorWordWrapLeftButton(new GUIContent("Run", tooltip), new GUIContent(label, tooltip));
             if(hasPressed)
-                StartCoroutine(BlenderConnector.RunConvertPLYtoOBJCoroutine(processingCaller, inputFilePath, outputFilePath, ReadMeshFaceCount));
+                StartCoroutine(BlenderConnector.RunConvertPLYtoOBJCoroutine(this, inputFilePath, outputFilePath, ReadMeshFaceCount));
             // Reset the GUI.
             GUI.enabled = isGUIEnabled;
             EditorGUILayout.Space();
         }
 
-        /// <summary>
-        /// Checks the number of faces on the current .OBJ mesh.
-        /// </summary>
-        /// <param name="workspace"></param> The workspace from which to perform this method.
-        public void CheckOBJMeshInfo(string workspace)
-        {
-            string inputFilePath = Path.Combine(workspace, BlenderConnector.convertPLYtoOBJOutputFileName);
-            StartCoroutine(BlenderConnector.RunCheckOBJMeshInfoCoroutine(this, inputFilePath, ReadMeshFaceCount));
-        }
+        // /// <summary>
+        // /// Checks the number of faces on the current .OBJ mesh.
+        // /// </summary>
+        // /// <param name="workspace"></param> The workspace from which to perform this method.
+        // public void CheckOBJMeshInfo(string workspace)
+        // {
+        //     string inputFilePath = Path.Combine(workspace, BlenderConnector.convertPLYtoOBJOutputFileName);
+        //     StartCoroutine(BlenderConnector.RunCheckOBJMeshInfoCoroutine(this, inputFilePath, ReadMeshFaceCount));
+        // }
 
-        /// <summary>
-        /// Enables the user to check the mesh information contained in the .OBJ file via Blender.
-        /// </summary>
-        public void SubsectionCheckOBJMeshInfo()
-        {
-            EditorGUILayout.Space();
-            string inputFilePath = Path.Combine(_meshWorkspace, BlenderConnector.convertPLYtoOBJOutputFileName);
-            string label = "Check .OBJ mesh information.";
-            string tooltip = "File " + GeneralToolkit.FormatPathForCommand(inputFilePath) + " will be read from, to check its number of triangle faces.";
-            // Check if this option is available.
-            bool isGUIEnabled = GUI.enabled;
-            GUI.enabled = isGUIEnabled && File.Exists(inputFilePath) && Application.isPlaying;
-            GeneralToolkit.EditorRequirePlayMode(ref tooltip);
-            // Display a button to launch the helper method.
-            bool hasPressed = GeneralToolkit.EditorWordWrapLeftButton(new GUIContent("Run", tooltip), new GUIContent(label, tooltip));
-            if(hasPressed)
-                CheckOBJMeshInfo(_meshWorkspace);
-            // Display the current face count.
-            GUIStyle grey = GeneralToolkit.wordWrapStyle;
-            grey.normal.textColor = Color.grey;
-            label = "Mesh face count: ";
-            if(meshFaceCount == -1)
-                label += "not determined.";
-            else
-                label += GeneralToolkit.ToString(meshFaceCount) + ".";
-            tooltip = "Number of faces on the mesh.";
-            EditorGUILayout.LabelField(new GUIContent(label, tooltip), grey);
-            // Reset the GUI.
-            GUI.enabled = isGUIEnabled;
-            EditorGUILayout.Space();
-        }
+        // /// <summary>
+        // /// Enables the user to check the mesh information contained in the .OBJ file via Blender.
+        // /// </summary>
+        // public void SubsectionCheckOBJMeshInfo()
+        // {
+        //     EditorGUILayout.Space();
+        //     string inputFilePath = Path.Combine(_meshWorkspace, BlenderConnector.convertPLYtoOBJOutputFileName);
+        //     string label = "Check .OBJ mesh information.";
+        //     string tooltip = "File " + GeneralToolkit.FormatPathForCommand(inputFilePath) + " will be read from, to check its number of triangle faces.";
+        //     // Check if this option is available.
+        //     bool isGUIEnabled = GUI.enabled;
+        //     GUI.enabled = isGUIEnabled && File.Exists(inputFilePath) && Application.isPlaying;
+        //     GeneralToolkit.EditorRequirePlayMode(ref tooltip);
+        //     // Display a button to launch the helper method.
+        //     bool hasPressed = GeneralToolkit.EditorWordWrapLeftButton(new GUIContent("Run", tooltip), new GUIContent(label, tooltip));
+        //     if(hasPressed)
+        //         CheckOBJMeshInfo(_meshWorkspace);
+        //     // Display the current face count.
+        //     GUIStyle grey = GeneralToolkit.wordWrapStyle;
+        //     grey.normal.textColor = Color.grey;
+        //     label = "Mesh face count: ";
+        //     if(meshFaceCount == -1)
+        //         label += "not determined.";
+        //     else
+        //         label += GeneralToolkit.ToString(meshFaceCount) + ".";
+        //     tooltip = "Number of faces on the mesh.";
+        //     EditorGUILayout.LabelField(new GUIContent(label, tooltip), grey);
+        //     // Reset the GUI.
+        //     GUI.enabled = isGUIEnabled;
+        //     EditorGUILayout.Space();
+        // }
 
         /// <summary>
         /// Enables the user to simplify the .OBJ mesh via Blender.

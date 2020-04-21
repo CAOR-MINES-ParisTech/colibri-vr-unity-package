@@ -23,16 +23,19 @@ namespace COLIBRIVR.ExternalConnectors
         /// <summary>
         /// Coroutine that performs automatic retopology on a given mesh using the Instant Meshes implementation.
         /// </summary>
-        /// <param name="caller"></param> The object calling this method.
+        /// <param name="caller"></param> The Instant Meshes helper calling this method.
         /// <param name="workspace"></param> The workspace from which to launch the command.
         /// <param name="inputFilePath"></param> The full path to the input .PLY or .OBJ file.
         /// <param name="outputFilePath"></param> The full path to the output .PLY or .OBJ file.
-        /// <param name="blenderHelper"></param> The helper component for Blender.
+        /// <param name="reduceVertexCount"></param> Whether to reduce the vertex count to the recommended value.
         /// <returns></returns>
-        public static IEnumerator RunInstantMeshesCoroutine(MonoBehaviour caller, string workspace, string inputFilePath, string outputFilePath, BlenderHelper blenderHelper)
+        public static IEnumerator RunInstantMeshesCoroutine(InstantMeshesHelper caller, string workspace, string inputFilePath, string outputFilePath, bool reduceVertexCount)
         {
             // Indicate to the user that the process has started.
             GeneralToolkit.ResetCancelableProgressBar(true, true);
+            // If the initial face count is needed, display the input mesh to get it.
+            if(!reduceVertexCount)
+                caller.DisplayMeshInSceneView(inputFilePath);
             // Initialize the command parameters.
             bool displayProgressBar = true;
             bool stopOnError = true;
@@ -45,15 +48,14 @@ namespace COLIBRIVR.ExternalConnectors
             string command = "CALL " + formattedExePath;
             command += " --output " + GeneralToolkit.FormatPathForCommand(outputFilePath);
             command += " --deterministic --boundaries --rosy 6 --posy 6";
-            // If there is a Blender helper, use the determined mesh face count to define the desired face count.
-            if(blenderHelper != null && blenderHelper.meshFaceCount != -1)
-                command += " --faces " + GeneralToolkit.ToString(blenderHelper.meshFaceCount);
+            // If desired, use the determined mesh face count to define the desired face count.
+            if(!reduceVertexCount)
+                command += " --faces " + GeneralToolkit.ToString(caller.loadedMeshFaceCount);
             // Launch the command.
             command += " " + GeneralToolkit.FormatPathForCommand(inputFilePath);
             yield return caller.StartCoroutine(GeneralToolkit.RunCommandCoroutine(typeof(InstantMeshesConnector), command, workspace, displayProgressBar, null, null, stopOnError, progressBarParams));
-            // If there is a Blender helper, update the mesh's face count.
-            if(blenderHelper != null)
-                blenderHelper.CheckOBJMeshInfo(workspace);
+            // Display the transformed mesh in the Scene view.
+            caller.DisplayMeshInSceneView(outputFilePath);
             // Indicate to the user that the process has ended.
             GeneralToolkit.ResetCancelableProgressBar(false, false);
         }

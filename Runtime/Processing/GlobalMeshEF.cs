@@ -169,18 +169,12 @@ namespace COLIBRIVR.Processing
                 else
                 {
                     // Copy the mesh to the resources folder.
-                    string dstName = "COLIBRITempResource";
-                    string dstFullPath = Path.Combine(COLIBRIVRSettings.settingsResourcesAbsolutePath, dstName + dstExtension);
-                    GeneralToolkit.Replace(PathType.File, _globalMeshPathAbsolute, dstFullPath);
-                    // Refresh the asset database.
-                    AssetDatabase.Refresh();
+                    string dstFullPath = GeneralToolkit.CopyObjectFromPathIntoResources(_globalMeshPathAbsolute);
                     yield return null;
                     // Make the mesh readable so that colliders can be added.
-                    ModelImporter modelImporter = ModelImporter.GetAtPath(GeneralToolkit.ToRelativePath(dstFullPath)) as ModelImporter;
-                    modelImporter.isReadable = true;
-                    modelImporter.SaveAndReimport();
+                    GeneralToolkit.MakeMeshReadable(dstFullPath);
                     // Load the mesh from resources.
-                    Mesh loadedMesh = Resources.Load<Mesh>(dstName);
+                    Mesh loadedMesh = Resources.Load<Mesh>(Path.GetFileNameWithoutExtension(dstFullPath));
                     // Copy the mesh by instantiating it.
                     globalMesh = (Mesh)Instantiate(loadedMesh);
                     // Recalculate the mesh's normals and bounds.

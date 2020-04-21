@@ -16,9 +16,28 @@ namespace COLIBRIVR.ExternalConnectors
     public class InstantMeshesHelper : ExternalHelper
     {
 
+#region CONST_FIELDS
+
+        private const string _propertyNameReduceVertexCountToRecommended = "_reduceVertexCountToRecommended";
+
+#endregion //CONST_FIELDS
+
+#region FIELDS
+
+        [SerializeField] private bool _reduceVertexCountToRecommended;
+
+#endregion //FIELDS
+
 #if UNITY_EDITOR
 
 #region INHERITANCE_METHODS
+
+        /// <inheritdoc/>
+        public override void Reset()
+        {
+            base.Reset();
+            _reduceVertexCountToRecommended = true;
+        }
 
         /// <inheritdoc/>
         public override void DisplayEditorFoldout()
@@ -54,15 +73,19 @@ namespace COLIBRIVR.ExternalConnectors
             // Check if this option is available.
             bool isGUIEnabled = GUI.enabled;
             GUI.enabled = isGUIEnabled && File.Exists(inputFilePath) && Application.isPlaying;
-            GeneralToolkit.EditorRequirePlayMode(ref tooltip);
-            // Display a button to launch the helper method.
+            GeneralToolkit.EditorRequirePlayMode(ref tooltip);// Display a button to launch the helper method.
             bool hasPressed = GeneralToolkit.EditorWordWrapLeftButton(new GUIContent("Run", tooltip), new GUIContent(label, tooltip));
             // If the button is pressed, launch the method.
             if(hasPressed)
             {
-                BlenderHelper blenderHelper = GetComponent<BlenderHelper>();
-                StartCoroutine(InstantMeshesConnector.RunInstantMeshesCoroutine(this, workspace, inputFilePath, outputFilePath, blenderHelper));
+                StartCoroutine(InstantMeshesConnector.RunInstantMeshesCoroutine(this, workspace, inputFilePath, outputFilePath, _reduceVertexCountToRecommended));
             }
+            // Provide the option to reduce the face count to the value recommended by Instant Meshes, or to use the current vertex count.
+            SerializedProperty propertyReduceVertexCountToRecommended = serializedObject.FindProperty(_propertyNameReduceVertexCountToRecommended);
+            label = "Reduce vertex count:";
+            tooltip = "If true, reduces the vertex count to the value recommended by Instant Meshes. Otherwise, aims to keep the same vertex count.";
+            tooltip += " For scenes in which the region of interest is small compared to the bounds of the mesh, it is recommended to turn this off.";
+            propertyReduceVertexCountToRecommended.boolValue = EditorGUILayout.Toggle(new GUIContent(label, tooltip), propertyReduceVertexCountToRecommended.boolValue);
             // Reset the GUI.
             GUI.enabled = isGUIEnabled;
             EditorGUILayout.Space();

@@ -92,8 +92,9 @@ namespace COLIBRIVR.ExternalConnectors
         /// <summary>
         /// On destroy, saves an update indicator if exiting play mode after reconstruction.
         /// </summary>
-        void OnDestroy()
+        public override void OnDestroy()
         {
+            base.OnDestroy();
             if(hasPerformedSparseReconstruction && EditorApplication.isPlaying && GeneralToolkit.IsStartingNewScene())
             {
                 PrefabUtility.SaveAsPrefabAsset(gameObject, Path.Combine("Assets", _updateDirectoryIndicatorPathEnd));

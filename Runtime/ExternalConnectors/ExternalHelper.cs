@@ -5,6 +5,7 @@
 
 using UnityEngine;
 using UnityEditor;
+using System.IO;
 
 namespace COLIBRIVR.ExternalConnectors
 {
@@ -18,10 +19,18 @@ namespace COLIBRIVR.ExternalConnectors
 #region CONST_FIELDS
 
         public const string EHTransformName = "ExternalHelpers";
+        public const int indexBlender = 1;
 
         private const string _propertyNameFoldout = "_foldout";
 
 #endregion //CONST_FIELDS
+
+#region STATIC_FIELDS
+
+        private static string _loadedMeshFullPath;
+        private static MeshFilter _loadedMeshFilter;
+
+#endregion //STATIC_FIELDS
 
 #region STATIC_PROPERTIES
 
@@ -63,6 +72,12 @@ namespace COLIBRIVR.ExternalConnectors
 
 #endregion //FIELDS
 
+#region PROPERTIES
+
+        public int loadedMeshFaceCount { get { return _loadedMeshFilter.mesh.triangles.Length / 3; } }
+
+#endregion //PROPERTIES
+
 #if UNITY_EDITOR
 
 #region INHERITANCE_METHODS
@@ -74,6 +89,20 @@ namespace COLIBRIVR.ExternalConnectors
         {
             base.Reset();
             _foldout = false;
+            _loadedMeshFullPath = string.Empty;
+            _loadedMeshFilter = null;
+        }
+
+        /// <summary>
+        /// On destroy, destroys the potentially copied mesh in the Resources folder.
+        /// </summary>
+        public virtual void OnDestroy()
+        {
+            if(_loadedMeshFullPath != string.Empty && EditorApplication.isPlaying && GeneralToolkit.IsStartingNewScene())
+            {
+                GeneralToolkit.Delete(_loadedMeshFullPath);
+                AssetDatabase.Refresh();
+            }
         }
 
         /// <summary>
@@ -110,6 +139,24 @@ namespace COLIBRIVR.ExternalConnectors
                     DisplaySubsections();
             }
             serializedObject.ApplyModifiedProperties();
+        }
+
+        /// <summary>
+        /// Displays the mesh at the given path in the Scene view.
+        /// </summary>
+        /// <param name="meshFullPath"></param> The full path to the mesh.
+        public void DisplayMeshInSceneView(string meshFullPath)
+        {
+            _loadedMeshFullPath = GeneralToolkit.CopyObjectFromPathIntoResources(meshFullPath);
+            GeneralToolkit.MakeMeshReadable(_loadedMeshFullPath);
+            Mesh loadedMesh = Resources.Load<Mesh>(Path.GetFileNameWithoutExtension(_loadedMeshFullPath));
+            if(_loadedMeshFilter == null)
+            {
+                _loadedMeshFilter = new GameObject("Visualization Mesh").AddComponent<MeshFilter>();
+                _loadedMeshFilter.gameObject.AddComponent<MeshRenderer>().material = new Material(GeneralToolkit.shaderStandard);
+            }
+            _loadedMeshFilter.mesh = loadedMesh;
+            Debug.Log(GeneralToolkit.FormatScriptMessage(this.GetType(), "Displayed mesh for visualization, with: " + loadedMeshFaceCount + " faces."));
         }
 
 #endregion //METHODS
