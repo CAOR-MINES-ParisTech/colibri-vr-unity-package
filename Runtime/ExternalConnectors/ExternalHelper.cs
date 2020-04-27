@@ -72,13 +72,13 @@ namespace COLIBRIVR.ExternalConnectors
 
 #endregion //FIELDS
 
+#if UNITY_EDITOR
+
 #region PROPERTIES
 
         public int loadedMeshFaceCount { get { return _loadedMeshFilter.mesh.triangles.Length / 3; } }
 
 #endregion //PROPERTIES
-
-#if UNITY_EDITOR
 
 #region INHERITANCE_METHODS
 
