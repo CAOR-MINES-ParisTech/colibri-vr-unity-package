@@ -243,13 +243,13 @@ namespace COLIBRIVR.ExternalConnectors
         /// <summary>
         /// Coroutine that runs the sparse reconstruction process.
         /// </summary>
-        /// <param name="caller"></param> The processing object calling this method.
+        /// <param name="caller"></param> The COLMAP helper object calling this method.
         /// <param name="workspace"></param> The workspace from which to perform this method.
         /// <param name="COLMAPCameraIndex"></param> The index of the type of source camera (in the list of COLMAP cameras).
         /// <param name="isSingleCamera"></param> True if the source images were acquired by the same camera, false otherwise.
         /// <param name="maxImageSize"></param> The maximum image size for the undistortion step.
         /// <returns></returns>
-        public static IEnumerator RunSparseReconstructionCoroutine(Processing.Processing caller, string workspace, int COLMAPCameraIndex, bool isSingleCamera, int maxImageSize)
+        public static IEnumerator RunSparseReconstructionCoroutine(COLMAPHelper caller, string workspace, int COLMAPCameraIndex, bool isSingleCamera, int maxImageSize)
         {
             // Indicate to the user that the process has started.
             GeneralToolkit.ResetCancelableProgressBar(true, true);
@@ -326,7 +326,10 @@ namespace COLIBRIVR.ExternalConnectors
             }
             // Change the data directory to the one created in the dense folder.
             if(!GeneralToolkit.progressBarCanceled)
+            {
                 Debug.Log(GeneralToolkit.FormatScriptMessage(typeof(COLMAPConnector), "Sparse reconstruction was a success."));
+                caller.hasPerformedSparseReconstruction = true;
+            }
             // Indicate to the user that the process has ended.
             GeneralToolkit.ResetCancelableProgressBar(false, false);
         }
@@ -545,15 +548,16 @@ namespace COLIBRIVR.ExternalConnectors
         /// </summary>
         /// <param name="line"></param> The line to be parsed.
         /// <returns></returns> A camera model containing the parsed parameters.
-        public static CameraModel TryParseCameraModel(string line)
+        public static CameraModel TryParseCameraModel(string line, out string warning)
         {
+            warning = string.Empty;
             CameraModel cameraModel = null;
             string[] split = line.Split(' ');
             int numberOfParameters = split.Length - 2;
             // COLMAP cameras have at least one parameter.
             if(numberOfParameters < 1)
             {
-                Debug.LogError(line + " is not in the right format to be a COLMAP camera.");
+                warning = line + " is not in the right format to be a COLMAP camera";
             }
             // Parse the camera based on the camera type and number of parameters.
             else
@@ -568,15 +572,15 @@ namespace COLIBRIVR.ExternalConnectors
                     else if(cameraType == "OMNIDIRECTIONAL" && numberOfParameters == 5)
                         cameraModel = ParseOmnidirectional(split);
                     else
-                        Debug.LogWarning("Provided number of parameters (" + numberOfParameters + ") is not the expected number for camera type " + cameraType + ".");
+                        warning = "Provided number of parameters (" + numberOfParameters + ") is not the expected number for camera type " + cameraType;
                 }
                 else if (COLMAPCameraTypes.Contains(cameraType))
                 {
-                    Debug.LogWarning("COLMAP camera type " + cameraType + " is not currently supported by COLIBRI VR.");
+                    warning = "COLMAP camera type " + cameraType + " is not supported by COLIBRI VR";
                 }
                 else
                 {
-                    Debug.LogWarning("Camera type " + cameraType + " is not valid.");
+                    warning = "Camera type " + cameraType + " is not valid";
                 }
             }
             return cameraModel;
@@ -712,10 +716,13 @@ namespace COLIBRIVR.ExternalConnectors
             {
                 if(!line.StartsWith("#"))
                 {
-                    CameraModel cameraModel = TryParseCameraModel(line);
+                    string warning;
+                    CameraModel cameraModel = TryParseCameraModel(line, out warning);
                     if(cameraModel == null)
                     {
-                        Debug.LogWarning("One or more of the camera models could not be parsed. Camera setup cannot be computed.");
+                        warning = "Camera setup cannot be computed, because a warning was raised: \"" + warning + "\".";
+                        warning += " If an unsupported COLMAP camera model was recognized, try navigating to {current_directory}/dense/0.";
+                        Debug.LogWarning(warning);
                         cameraSetup.ResetCameraModels();
                         return;
                     }
@@ -796,8 +803,10 @@ namespace COLIBRIVR.ExternalConnectors
         /// </summary>
         /// <param name="cameraSetup"></param> The camera setup to which to output the list of parsed camera models.
         /// <param name="workspace"></param> The workspace from which to work.
-        public static void ReadImagesInformation(CameraSetup cameraSetup, string workspace)
+        /// <param name="pointCorrespondencesExist"></param> Outputs true if point correspondences have been made between the images, false otherwise.
+        public static void ReadImagesInformation(CameraSetup cameraSetup, string workspace, out bool pointCorrespondencesExist)
         {
+            pointCorrespondencesExist = false;
             List<Vector3> positionList = new List<Vector3>();
             List<Quaternion> rotationList = new List<Quaternion>();
             List<string> fileNameList = new List<string>();
@@ -816,6 +825,8 @@ namespace COLIBRIVR.ExternalConnectors
                         // If the line is odd, skip it, and indicate that the next line will be even.
                         if(isOdd)
                         {
+                            if(line != string.Empty)
+                                pointCorrespondencesExist = true;
                             isOdd = false;
                         }
                         // If the line is even, parse it, and indicate that the next line will be odd.

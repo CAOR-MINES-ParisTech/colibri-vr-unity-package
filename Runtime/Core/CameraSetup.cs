@@ -74,7 +74,8 @@ namespace COLIBRIVR
                         Vector3 positionA = selectedCameraModels[indexA].transform.position;
                         Vector3 positionB = selectedCameraModels[indexB].transform.position;
                         float distance = (positionB - positionA).magnitude;
-                        distanceList.Add(distance);
+                        if(distance > 0)
+                            distanceList.Add(distance);
                         iterationNumber++;
                         if(iterationNumber > reasonableNumberOfTests)
                             break;     

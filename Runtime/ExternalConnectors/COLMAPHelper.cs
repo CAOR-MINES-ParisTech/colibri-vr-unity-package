@@ -33,11 +33,11 @@ namespace COLIBRIVR.ExternalConnectors
 
 #region FIELDS
 
+        public bool hasPerformedSparseReconstruction;
+
         [SerializeField] private int _COLMAPCameraIndex;
         [SerializeField] private bool _isSingleCamera;
         [SerializeField] private int _maxImageSize;
-
-        private bool hasPerformedSparseReconstruction;
 
 #endregion //FIELDS
 
@@ -118,7 +118,7 @@ namespace COLIBRIVR.ExternalConnectors
             tooltip += "Camera setup information will be stored at: \"" + COLMAPConnector.GetCamerasFile(workspace) + "\".";
             // Check if this option is available.
             bool isGUIEnabled = GUI.enabled;
-            GUI.enabled = isGUIEnabled && (processingCaller.dataHandler.sourceColorCount > 1) && !(workspace.Contains(COLMAPConnector.dense0DirName)) && Application.isPlaying;
+            GUI.enabled = isGUIEnabled && (dataHandler != null && dataHandler.sourceColorCount > 1) && Application.isPlaying;
             GeneralToolkit.EditorRequirePlayMode(ref tooltip);
             // Display a button to launch the helper method.
             bool hasPressed = GeneralToolkit.EditorWordWrapLeftButton(new GUIContent("Run", tooltip), new GUIContent(label, tooltip));
@@ -147,8 +147,7 @@ namespace COLIBRIVR.ExternalConnectors
                 // If the user confirms, launch the method.
                 if(EditorUtility.DisplayDialog(label, tooltip, "Yes", "No"))
                 {
-                    StartCoroutine(COLMAPConnector.RunSparseReconstructionCoroutine(processingCaller, workspace, _COLMAPCameraIndex, _isSingleCamera, _maxImageSize));
-                    hasPerformedSparseReconstruction = true;
+                    StartCoroutine(COLMAPConnector.RunSparseReconstructionCoroutine(this, workspace, _COLMAPCameraIndex, _isSingleCamera, _maxImageSize));
                 }
             }
             // Reset the GUI.
@@ -168,7 +167,7 @@ namespace COLIBRIVR.ExternalConnectors
             string tooltip = "Processed geometry will be stored at: \"" + COLMAPConnector.GetDelaunayFile(workspace) + "\".";
             // Check if this option is available.
             bool isGUIEnabled = GUI.enabled;
-            GUI.enabled = isGUIEnabled && (cameraSetup != null && cameraSetup.cameraModels != null) && workspace.Contains(COLMAPConnector.dense0DirName) && Application.isPlaying;
+            GUI.enabled = isGUIEnabled && (cameraSetup != null && cameraSetup.cameraModels != null && cameraSetup.cameraModels.Length > 0) && (dataHandler != null && dataHandler.imagePointCorrespondencesExist) && Application.isPlaying;
             GeneralToolkit.EditorRequirePlayMode(ref tooltip);
             // Display a button to launch the helper method.
             bool hasPressed = GeneralToolkit.EditorWordWrapLeftButton(new GUIContent("Run", tooltip), new GUIContent(label, tooltip));
@@ -176,12 +175,14 @@ namespace COLIBRIVR.ExternalConnectors
             if(hasPressed)
             {
                 label = "Existing data will be erased. Are you ready to proceed?";
-                tooltip = "Launching this process will erase data in the folder: \"" + workspace + "\". Are you ready to proceed?";
+                tooltip = "WARNING: Before launching this step, please check that you are using a CUDA-capable GPU. Your current GPU is a " + SystemInfo.graphicsDeviceName + ".";
+                tooltip += "\n\nLaunching this process will erase data in the folder: \"" + workspace + "\". Are you ready to proceed?";
                 // If the user confirms, update the workspace directory and launch the method.
-                if(EditorUtility.DisplayDialog(label, tooltip, "Yes", "No"))
-                {
+                int chosenButton = EditorUtility.DisplayDialogComplex(label, tooltip, "Yes", "No", "Check whether my GPU is CUDA-capable");
+                if(chosenButton == 0)
                     StartCoroutine(COLMAPConnector.RunDenseReconstructionCoroutine(this, workspace, cameraSetup.cameraModels.Length));
-                }
+                else if(chosenButton == 2)
+                    Application.OpenURL("https://developer.nvidia.com/cuda-gpus");
             }
             // Reset the GUI.
             GUI.enabled = isGUIEnabled;

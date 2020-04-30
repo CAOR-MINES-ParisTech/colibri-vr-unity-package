@@ -3,6 +3,7 @@
 /// 
 /// Author: Grégoire Dupont de Dinechin, gregoire@dinechin.org
 
+using System.IO;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
@@ -198,7 +199,7 @@ namespace COLIBRIVR.Processing
                 }
             }
             EditorGUILayout.Space();
-            GUI.enabled = isGUIEnabled && !Application.isPlaying;
+            GUI.enabled = isGUIEnabled && !Application.isPlaying && Directory.Exists(_targetObject.dataHandler.processedDataDirectory);
             label = "Bundle processed data";
             tooltip = "The Unity asset bundle will be stored at \"" + _targetObject.dataHandler.bundleDirectory + "\".";
             if(GUILayout.Button(new GUIContent(label, tooltip)))

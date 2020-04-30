@@ -86,6 +86,7 @@ namespace COLIBRIVR
         public int sourceColorCount;
         public int sourcePerViewCount;
         public int sourceGlobalCount;
+        public bool imagePointCorrespondencesExist;
 
         [SerializeField] private Processing.Processing _processingCaller;
         [SerializeField] private string _dataDirectory;

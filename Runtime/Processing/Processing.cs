@@ -285,7 +285,7 @@ namespace COLIBRIVR.Processing
             if(COLMAPConnector.DirectoryIsValidForReading(dataHandler.dataDirectory))
             {
                 // Read the pose data and camera parameters, and store it into the initial camera models.
-                COLMAPConnector.ReadImagesInformation(cameraSetup, dataHandler.dataDirectory);
+                COLMAPConnector.ReadImagesInformation(cameraSetup, dataHandler.dataDirectory, out dataHandler.imagePointCorrespondencesExist);
                 COLMAPConnector.ReadCamerasInformation(cameraSetup, dataHandler.dataDirectory);
                 // Only continue if camera models were successfully parsed.
                 if(cameraSetup.cameraModels != null && cameraSetup.cameraModels.Length > 0)

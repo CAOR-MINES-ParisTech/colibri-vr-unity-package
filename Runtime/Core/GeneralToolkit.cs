@@ -706,13 +706,18 @@ namespace COLIBRIVR
             bool isHarmlessWarning = false;
             string logMessageInvariant = logMessage.ToUpperInvariant();
             if(logMessageInvariant.StartsWith("WARNING"))
+            {
                 isHarmlessWarning = true;
+                Debug.LogWarning(FormatScriptMessage(callerType, "Caught warning: \"" + logMessage + "\"."));
+            }
             else if(harmlessWarnings != null)
+            {
                 for(int iter = 0; iter < harmlessWarnings.Length; iter++)
                     if(logMessageInvariant.Contains(harmlessWarnings[iter].ToUpperInvariant()))
                         isHarmlessWarning = true;
-            if(isHarmlessWarning)
-                Debug.Log(FormatScriptMessage(callerType, "Caught harmless warning: \"" + logMessage + "\"."));
+                if(isHarmlessWarning)
+                    Debug.LogWarning(FormatScriptMessage(callerType, "Caught harmless warning: \"" + logMessage + "\"."));
+            }
             return isHarmlessWarning;
         }
 
@@ -743,13 +748,11 @@ namespace COLIBRIVR
             processStartInfo.RedirectStandardError = true;
             if(workingDirectory != null)
                 processStartInfo.WorkingDirectory = workingDirectory;
-            System.Diagnostics.Process process = new System.Diagnostics.Process();
             _outputDataReceived = new List<string>();
             _errorDataReceived = new List<string>();
-            // Try to launch the process.
-            try
+            bool forceExit = false;
+            using(System.Diagnostics.Process process = System.Diagnostics.Process.Start(processStartInfo))
             {
-                process = System.Diagnostics.Process.Start(processStartInfo);
                 // Catch any errors or log messages that the process may return.
                 process.OutputDataReceived += ProcessOutputDataReceivedEventHandler;
                 process.ErrorDataReceived += ProcessErrorDataReceivedEventHandler;
@@ -760,107 +763,106 @@ namespace COLIBRIVR
                 // If a progress bar is to be displayed, start displaying it.
                 if(displayProgressBar)
                     UpdateCancelableProgressBarWithParams(callerType, progressBarParams);
-            }
-            // Add any returned exception to the list of errors.
-            catch (System.Exception e)
-            {
-                _errorDataReceived.Add(e.ToString());
-            }
-            // Wait for the process to end naturally or for the user to end it, while monitoring its output.
-            string logSegment = string.Empty;
-            string progressBarInfo = string.Empty;
-            bool forceExit = false;
-            bool naturalExit = false;
-            int outputDataLineCount = 0;
-            int maxLineCountBeforeDebug = 50000;
-            string logHeader = "===== Log block (" + maxLineCountBeforeDebug  + " characters) =====\n\n";
-            while(!(forceExit || naturalExit))
-            {
-                // If there are error messages, display them. If desired, stop the process afterwards.
-                if(_errorDataReceived.Count > 0)
+                // Wait for the process to end naturally or for the user to end it, while monitoring its output.
+                string logSegment = string.Empty;
+                string progressBarInfo = string.Empty;
+                int outputDataLineCount = 0;
+                int maxLineCountBeforeDebug = 50000;
+                string logHeader = "===== Log block (" + maxLineCountBeforeDebug  + " characters) =====\n\n";
+                while(!(forceExit || process.HasExited))
                 {
-                    // Loop over the received error messages.
-                    for(int i = 0; i < _errorDataReceived.Count; i++)
+                    // If there are error messages, display them. If desired, stop the process afterwards.
+                    if(_errorDataReceived.Count > 0)
                     {
-                        string logMessage = _errorDataReceived[i];
-                        // Check that the message is not a harmless warning.
-                        bool isHarmlessWarning = CheckIsHarmlessWarning(callerType, harmlessWarnings, logMessage);
-                        // If it is a true error, apply the corresponding consequences.
-                        if(!isHarmlessWarning)
+                        // Loop over the received error messages.
+                        for(int i = 0; i < _errorDataReceived.Count; i++)
                         {
-                            UnityEngine.Debug.LogError(FormatScriptMessage(callerType, "Errors were returned, please consult the log message for details."));
-                            string errorMessages = string.Empty;
-                                errorMessages += logMessage + "\n";
-                            UnityEngine.Debug.LogError(FormatScriptMessage(callerType, logHeader + errorMessages));
-                            forceExit = (stopOnError) ? true : forceExit;
-                        }
-                    }
-                    // Clear the received error data.
-                    _errorDataReceived.Clear();
-                    // Force the loop exit if needed.
-                    if(forceExit)
-                        break;
-                }
-                // If there are log messages, concatenate them, and display the concatenated list when it becomes too large.
-                if(_outputDataReceived.Count > 0)
-                {
-                    for(int i = 0; i < _outputDataReceived.Count; i++)
-                    {
-                        string logMessage = _outputDataReceived[i];
-                        if(!string.IsNullOrEmpty(logMessage))
-                        {
-                            logSegment += logMessage + "\n";
-                            // Display any warnings using the warning message in the console.
-                            CheckIsHarmlessWarning(callerType, harmlessWarnings, logMessage);
-                            // Display the log segment if it becomes too large.
-                            bool segmentTooLong = (logSegment.Length > maxLineCountBeforeDebug);
-                            if(segmentTooLong)
+                            string logMessage = _errorDataReceived[i];
+                            // Check that the message is not a harmless warning.
+                            bool isHarmlessWarning = CheckIsHarmlessWarning(callerType, harmlessWarnings, logMessage);
+                            // If it is a true error, apply the corresponding consequences.
+                            if(!isHarmlessWarning)
                             {
-                                Debug.Log(FormatScriptMessage(callerType, logHeader + logSegment));
-                                logSegment = string.Empty;
-                            }
-                            // Handle any error messages appearing in the log as if the process itself had launched an error in the console.
-                            else if(logMessage.ToUpperInvariant().StartsWith("ERROR"))
-                            {
-                                _errorDataReceived.Add(logMessage);
+                                UnityEngine.Debug.LogError(FormatScriptMessage(callerType, "Errors were returned, please consult the log message for details."));
+                                string errorMessages = string.Empty;
+                                    errorMessages += logMessage + "\n";
+                                UnityEngine.Debug.LogError(FormatScriptMessage(callerType, logHeader + errorMessages));
+                                forceExit = (stopOnError) ? true : forceExit;
                             }
                         }
+                        // Clear the received error data.
+                        _errorDataReceived.Clear();
+                        // Force the loop exit if needed.
+                        if(forceExit)
+                            break;
                     }
-                    // Update the information to be displayed in the progress bar.
+                    // If there are log messages, concatenate them, and display the concatenated list when it becomes too large.
+                    if(_outputDataReceived.Count > 0)
+                    {
+                        for(int i = 0; i < _outputDataReceived.Count; i++)
+                        {
+                            string logMessage = _outputDataReceived[i];
+                            if(!string.IsNullOrEmpty(logMessage))
+                            {
+                                logSegment += logMessage + "\n";
+                                // Display any warnings using the warning message in the console.
+                                CheckIsHarmlessWarning(callerType, harmlessWarnings, logMessage);
+                                // Display the log segment if it becomes too large.
+                                bool segmentTooLong = (logSegment.Length > maxLineCountBeforeDebug);
+                                if(segmentTooLong)
+                                {
+                                    Debug.Log(FormatScriptMessage(callerType, logHeader + logSegment));
+                                    logSegment = string.Empty;
+                                }
+                                // Handle any error messages appearing in the log as if the process itself had launched an error in the console.
+                                else if(logMessage.ToUpperInvariant().StartsWith("ERROR"))
+                                {
+                                    _errorDataReceived.Add(logMessage);
+                                }
+                            }
+                        }
+                        // Update the information to be displayed in the progress bar.
+                        if(displayProgressBar)
+                            progressBarInfo = "Log " + ToString(outputDataLineCount) + ": " + _outputDataReceived[_outputDataReceived.Count - 1];
+                        // Clear the log messages.
+                        outputDataLineCount += _outputDataReceived.Count;
+                        _outputDataReceived.Clear();
+                    }
+                    // If a progress bar is displayed, use it to display log messages.
                     if(displayProgressBar)
-                        progressBarInfo = "Log " + ToString(outputDataLineCount) + ": " + _outputDataReceived[_outputDataReceived.Count - 1];
-                    // Clear the log messages.
-                    outputDataLineCount += _outputDataReceived.Count;
-                    _outputDataReceived.Clear();
+                        UpdateCancelableProgressBar(callerType, false, false, false, -1, "", progressBarInfo, "");
+                    // If the user cancels the process using the progress bar, force the process to exit.
+                    if(displayProgressBar && progressBarCanceled)
+                    {
+                        forceExit = true;
+                        break;
+                    }
+                    // If the process naturally finishes, prepare to exit the loop.
+                    if(process.HasExited)
+                        break;
+                    yield return null;
                 }
-                // If a progress bar is displayed, use it to display log messages.
-                if(displayProgressBar)
-                    UpdateCancelableProgressBar(callerType, false, false, false, -1, "", progressBarInfo, "");
-                // If the user cancels the process using the progress bar, force the process to exit.
-                if(displayProgressBar && progressBarCanceled)
-                    forceExit = true;
-                // If the process naturally finishes, prepare to exit the loop.
-                if(process.HasExited)
-                    naturalExit = true;
-                yield return null;
+                // Display the final log.
+                if(!string.IsNullOrEmpty(logSegment))
+                    Debug.Log(FormatScriptMessage(callerType, logHeader + logSegment));
+                // If needed, kill the process and its children.
+                if(!process.HasExited)
+                    Microsoft.DotNet.Tools.Test.Utilities.ProcessExtensions.KillTree(process);
+                // Release any memory still associated with the process, just in case.
+                process.Dispose();
             }
-            // Display the final log.
-            if(!string.IsNullOrEmpty(logSegment))
-                Debug.Log(FormatScriptMessage(callerType, logHeader + logSegment));
-            // If the exit was not forced, indicate that the process has successfully finished.
-            if(naturalExit)
-            {
-                Debug.Log(FormatScriptMessage(callerType, "Finished command: " + command));
-            }
-            // If the exit was forced, indicate that it was canceled by the user, as this prevents further processes from being launched immediately afterwards.
-            else
+            // If the exit was forced, indicate that it was canceled by the user (this prevents further processes from being launched immediately afterwards), and kill the process.
+            if(forceExit)
             {
                 progressBarCanceled = true;
                 Debug.Log(FormatScriptMessage(callerType, "Command was interrupted by force: " + command));
             }
+            // If the exit was not forced, indicate that the process has successfully finished.
+            else
+            {
+                Debug.Log(FormatScriptMessage(callerType, "Finished command: " + command));
+            }
             // Clean up any created objects.
-            process.Dispose();
-            process = null;
             _outputDataReceived = null;
             _errorDataReceived = null;
         }
@@ -1037,8 +1039,8 @@ namespace COLIBRIVR
             bool canceled = EditorUtility.DisplayCancelableProgressBar(progressBarTitle, progressBarInfo, _progressBarValue);
             // Repaint all views. This prevents the progress bar from flickering.
             UnityEditorInternal.InternalEditorUtility.RepaintAllViews();
-            // If the user clicks to cancel the progress bar, display the exit message.
-            if(canceled)
+            // If the user clicks to cancel the progress bar (and it is not already being canceled), display the exit message.
+            if(canceled && !progressBarCanceled)
             {
                 Debug.Log(FormatScriptMessage(callerType, exitMessage));
                 progressBarCanceled = true;
