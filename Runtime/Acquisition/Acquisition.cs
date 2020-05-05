@@ -48,7 +48,7 @@ namespace COLIBRIVR.Acquisition
             COLMAPConnector.CreateDirectoryStructureForAcquisition(dataHandler.dataDirectory);
             COLMAPConnector.SaveCamerasInformation(cameraSetup.cameraModels, dataHandler.dataDirectory);
             COLMAPConnector.SaveImagesInformation(cameraSetup.cameraModels, dataHandler.dataDirectory);
-            dataHandler.SaveCOLIBRIVRAdditionalInformation(cameraSetup);
+            dataHandler.SaveAdditionalSetupInformation(cameraSetup);
         }
 
 #endif //UNITY_EDITOR
@@ -203,9 +203,11 @@ namespace COLIBRIVR.Acquisition
             {
                 cameraSetup.ChangeCameraCount(_cameraCount.x * _cameraCount.y);
                 if(_setupType == SetupType.Grid)
-                    cameraSetup.ComputeGridPoses(transform, _cameraCount);
-                else
-                    cameraSetup.ComputeSpherePoses(transform, _cameraCount, _setupDirection);
+                    cameraSetup.ComputeGridPoses(_cameraCount);
+                else if(_setupType == SetupType.Sphere)
+                    cameraSetup.ComputeSpherePoses(_cameraCount, _setupDirection);
+                else if(_setupType == SetupType.Cylinder)
+                    cameraSetup.ComputeCylinderPoses(_cameraCount, _setupDirection);
             }
         }
 

@@ -14,7 +14,7 @@ namespace COLIBRIVR
 
 #region ENUMS
 
-        public enum SetupType {Grid, Sphere};
+        public enum SetupType {Grid, Sphere, Cylinder};
         public enum SetupDirection {Inwards, Outwards};
 
 #endregion //ENUMS
@@ -46,82 +46,6 @@ namespace COLIBRIVR
             existingSetup.Reset();
             return existingSetup;
         }
-
-#if UNITY_EDITOR
- 
-        /// <summary>
-        /// Computes the size of the camera gizmos for the given setup.
-        /// To make computations reasonable, a certain number of assumptions are made.
-        /// </summary>
-        /// <param name="selectedCameraModels"></param> The array of selected camera models.
-        /// <param name="interCamDistanceFactor"></param> Inter-camera distance factor, computed empirically so that gizmos take a reasonable size.
-        /// <returns></returns> The gizmo size.
-        public static float ComputeGizmoSize(CameraModel[] selectedCameraModels, float interCamDistanceFactor = -1f)
-        {
-            if(selectedCameraModels == null || selectedCameraModels.Length < 1)
-                return -1;
-            float outputGizmoSize = 0f;
-            // If the inter-camera distance factor is not provided, compute it (here: one of the smallest inter-camera distances).
-            if(interCamDistanceFactor < 0)
-            {
-                int reasonableNumberOfTests = 100;
-                int iterationNumber = 0;
-                List<float> distanceList = new List<float>();
-                for(int indexA = 0; indexA < selectedCameraModels.Length; indexA++)
-                {
-                    for(int indexB = indexA + 1; indexB < selectedCameraModels.Length; indexB++)
-                    {
-                        Vector3 positionA = selectedCameraModels[indexA].transform.position;
-                        Vector3 positionB = selectedCameraModels[indexB].transform.position;
-                        float distance = (positionB - positionA).magnitude;
-                        if(distance > 0)
-                            distanceList.Add(distance);
-                        iterationNumber++;
-                        if(iterationNumber > reasonableNumberOfTests)
-                            break;     
-                    }       
-                }
-                if(distanceList.Count > 0)
-                {
-                    float[] distanceArray = distanceList.ToArray();
-                    Array.Sort(distanceArray);
-                    interCamDistanceFactor = distanceArray[Mathf.RoundToInt(distanceArray.Length / 10)];
-                }
-                else
-                {
-                    interCamDistanceFactor = 1f;
-                }
-            }
-            // Hypothesis: all cameras share projection type.
-            bool isOmnidirectional = selectedCameraModels[0].isOmnidirectional;
-            // If cameras are omnidirectional, compute the radius of a sphere gizmo.
-            if(isOmnidirectional)
-            {
-                // Set gizmo size to a quarter of the distance factor.
-                outputGizmoSize = 0.25f * interCamDistanceFactor;
-            }
-            // If cameras are perspective, compute the max range of a frustum gizmo.
-            else
-            {
-                // Hypothesis: all cameras share aspect ratio.
-                float aspectRatio = selectedCameraModels[0].pixelResolution.x * 1f / selectedCameraModels[0].pixelResolution.y;
-                // Set sensor size to half of the distance factor made smaller by the aspect ratio.
-                float sensorSize = 0.5f * interCamDistanceFactor * Mathf.Min(aspectRatio, 1f / aspectRatio);
-                // Hypothesis: all cameras share field of view.
-                Vector2 fieldOfView = selectedCameraModels[0].fieldOfView;
-                // Set gizmo size as corresponding focal length.
-                if(aspectRatio > 1)
-                    outputGizmoSize = Camera.FieldOfViewToFocalLength(fieldOfView.y, sensorSize);
-                else
-                    outputGizmoSize = Camera.FieldOfViewToFocalLength(fieldOfView.x, sensorSize);
-                // Set twice the sensor size as a maximum for gizmo size.
-                outputGizmoSize = Mathf.Min(outputGizmoSize, 2 * sensorSize);
-            }
-            // Return the computed gizmo size.
-            return outputGizmoSize;
-        }
-
-#endif //UNITY_EDITOR
 
 #endregion //STATIC_METHODS
 
@@ -159,7 +83,6 @@ namespace COLIBRIVR
 
         public CameraModel[] cameraModels;
         public Vector3 initialViewingPosition;
-        public float gizmoSize;
 
         [SerializeField] private int _previewIndex;
         [SerializeField] private UnityEvent _onPreviewIndexChangeEvent;
@@ -220,7 +143,6 @@ namespace COLIBRIVR
         public void Selected()
         {
             onPreviewIndexChangeEvent.AddListener(OnPreviewIndexChange);
-            UpdateGizmosSize();
             UpdateGizmosColor();
         }
 
@@ -255,16 +177,6 @@ namespace COLIBRIVR
         public void OnPreviewIndexChange()
         {
             UpdateGizmosColor();
-        }
-
-        /// <summary>
-        /// Updates the gizmo's size for each of the setup's camera models.
-        /// </summary>
-        public void UpdateGizmosSize()
-        {
-            if(cameraModels != null)
-                for(int iter = 0; iter < cameraModels.Length; iter++)
-                    cameraModels[iter].focalDistance = gizmoSize;
         }
 
         /// <summary>
@@ -361,8 +273,6 @@ namespace COLIBRIVR
             if(cameraModels.Length == 0)
                 cameraModels = null;
 #if UNITY_EDITOR
-            gizmoSize = ComputeGizmoSize(cameraModels);
-            UpdateGizmosSize();
             UpdateGizmosColor();
 #endif //UNITY_EDITOR
         }
@@ -379,13 +289,17 @@ namespace COLIBRIVR
         /// <summary>
         /// Computes camera poses on a grid.
         /// </summary>
-        /// <param name="parentTransform"></param> The parent transform.
         /// <param name="cameraCount"></param> The number of cameras on each of the axes of the grid.
-        public void ComputeGridPoses(Transform parentTransform, Vector2Int cameraCount)
+        public void ComputeGridPoses(Vector2Int cameraCount)
         {
-            // Compute several preliminary values. 
+            // Compute several preliminary values.
+            Transform parentTransform = cameraModels[0].transform.parent;
+            Vector3 lossyScale = parentTransform.lossyScale;
+            Vector2 absScale = new Vector2(Mathf.Abs(lossyScale.x), Mathf.Abs(lossyScale.y));
             Vector2 numberOfIntervals = cameraCount - Vector2.one;
-            Vector2 intervalSize = new Vector2(parentTransform.lossyScale.x / Mathf.Max(1, numberOfIntervals.x), parentTransform.lossyScale.y / Mathf.Max(1, numberOfIntervals.y));
+            Vector2 intervalSize = new Vector2(1f / Mathf.Max(1, numberOfIntervals.x), 1f / Mathf.Max(1, numberOfIntervals.y));
+            // Compute the minimum inter-camera distance.
+            float distanceToClosestCam = Mathf.Min(absScale.x * intervalSize.x, absScale.y * intervalSize.y);
             // Update the camera model of all source cameras.
             for(int j = 0; j < cameraCount.y; j++)
             {
@@ -395,36 +309,29 @@ namespace COLIBRIVR
                     CameraModel cameraModel = cameraModels[index];
                     cameraModel.SetCameraReferenceIndexAndImageName(index, index.ToString("0000") + ".png");
                     Vector2 planePos = (new Vector2(i, j) - 0.5f * numberOfIntervals) * intervalSize;
-                    cameraModel.transform.position = parentTransform.position + planePos.x * parentTransform.right + planePos.y * parentTransform.up;
-                    cameraModel.transform.rotation = parentTransform.rotation;
+                    cameraModel.transform.localPosition = planePos.x * Vector3.right + planePos.y * Vector3.up;
+                    cameraModel.transform.localRotation = Quaternion.identity;
+                    cameraModel.UpdateDistanceToClosestCam(distanceToClosestCam);
                 }
             }
             // Set the initial viewing position so that the viewer will initially look at the center of the grid.
-            Vector2 absScale = new Vector2(Mathf.Abs(parentTransform.lossyScale.x), Mathf.Abs(parentTransform.lossyScale.y));
             float largestDim = Mathf.Max(absScale.x, absScale.y);
             initialViewingPosition = parentTransform.position - 0.5f * largestDim * parentTransform.forward;
-            // Compute inter-camera distance factor (here: minimum inter-camera distance).
-            float interCamDistanceFactor = Mathf.Min(intervalSize.x, intervalSize.y);
-#if UNITY_EDITOR
-            // Compute the gizmo size.
-            gizmoSize = ComputeGizmoSize(cameraModels, interCamDistanceFactor);
-            UpdateGizmosSize();
-#endif //UNITY_EDITOR
         }
 
         /// <summary>
         /// Computes camera poses on a sphere.
         /// </summary>
-        /// <param name="parentTransform"></param> The parent transform.
         /// <param name="cameraCount"></param> The number of cameras on each of the arcs of the sphere.
         /// <param name="setupDirection"></param> The direction of the sphere setup, inward or outward.
-        public void ComputeSpherePoses(Transform parentTransform, Vector2Int cameraCount, SetupDirection setupDirection)
+        public void ComputeSpherePoses(Vector2Int cameraCount, SetupDirection setupDirection)
         {
-            // Compute several preliminary values. 
+            // Compute several preliminary values.
+            Transform parentTransform = cameraModels[0].transform.parent;
+            Vector3 lossyScale = parentTransform.lossyScale;
             Vector2 intervalArcDistance = Vector2.one / cameraCount;
             Vector2 degreesPerIteration = new Vector2(360f, 180f) * intervalArcDistance;
             int facingDirection = (setupDirection == SetupDirection.Outwards) ? 1 : -1;
-            Vector3 absScale = new Vector3(Mathf.Abs(parentTransform.lossyScale.x), Mathf.Abs(parentTransform.lossyScale.y), Mathf.Abs(parentTransform.lossyScale.z));
             // Update the camera model of all source cameras.
             for(int j = 0; j < cameraCount.y; j++)
             {
@@ -433,31 +340,68 @@ namespace COLIBRIVR
                     int index = j * cameraCount.x + i;
                     CameraModel cameraModel = cameraModels[index];
                     cameraModel.SetCameraReferenceIndexAndImageName(index, index.ToString("0000") + ".png");
-                    cameraModel.transform.rotation = Quaternion.AngleAxis(i * degreesPerIteration.x, -parentTransform.up) * Quaternion.AngleAxis(-90f + (j + 0.5f) * degreesPerIteration.y, -parentTransform.right) * parentTransform.rotation;
-                    cameraModel.transform.position = parentTransform.position + Vector3.Scale(cameraModels[index].transform.rotation * Vector3.forward, facingDirection * absScale);
+                    cameraModel.transform.localRotation = Quaternion.AngleAxis(i * degreesPerIteration.x, -Vector3.up) * Quaternion.AngleAxis(-90f + (j + 0.5f) * degreesPerIteration.y, -Vector3.right);
+                    cameraModel.transform.localPosition = facingDirection * (cameraModel.transform.localRotation * Vector3.forward);
+                    CheckCamDistanceWithOthersInSetup(index, Mathf.Max(0, index - cameraCount.x), index);
                 }
             }
             // Set the initial viewing position so that the viewer will look outwards from within, or inwards from without, based on the specified setup direction.
             initialViewingPosition = (facingDirection == 1) ? parentTransform.position : parentTransform.position - 1.5f * parentTransform.localScale.magnitude * parentTransform.forward;
-            // Compute the inter-camera distance factor (here: minimum inter-camera distance).
-            float interCamDistanceFactor = 1f;
-            int totalCameraCount = cameraCount.x * cameraCount.y;
-            if(totalCameraCount > 1)
+        }
+
+        /// <summary>
+        /// Computes camera poses on a cylinder.
+        /// </summary>
+        /// <param name="cameraCount"></param> The number of cameras on the circular section and on the vertical side of the cylinder.
+        /// <param name="setupDirection"></param> The direction of the cylinder setup, inward or outward.
+        public void ComputeCylinderPoses(Vector2Int cameraCount, SetupDirection setupDirection)
+        {
+            // Compute several preliminary values.
+            Transform parentTransform = cameraModels[0].transform.parent;
+            float horizontalDegreesPerIteration = 360f / cameraCount.x;
+            int facingDirection = (setupDirection == SetupDirection.Outwards) ? 1 : -1;
+            int numberOfVerticalIntervals = cameraCount.y - 1;
+            float verticalIntervalSize = 1f / Mathf.Max(1, numberOfVerticalIntervals);
+            float distanceToClosestVerticalCam = Mathf.Abs(parentTransform.lossyScale.y) * verticalIntervalSize;
+            // Update the camera model of all source cameras.
+            for(int j = 0; j < cameraCount.y; j++)
             {
-                float xDistance = (cameraModels[1].transform.position - cameraModels[0].transform.position).magnitude;
-                if(xDistance > 0)
-                    interCamDistanceFactor = xDistance;
-                int halfHeightIndexOne = (Mathf.FloorToInt(cameraCount.y / 2) - 1) * cameraCount.x;
-                int halfHeightIndexTwo = (halfHeightIndexOne + cameraCount.x);
-                float yDistance = (cameraModels[halfHeightIndexOne % totalCameraCount].transform.position - cameraModels[halfHeightIndexTwo % totalCameraCount].transform.position).magnitude;
-                if(yDistance > 0)
-                    interCamDistanceFactor = Mathf.Min(interCamDistanceFactor, yDistance);
+                for(int i = 0; i < cameraCount.x; i++)
+                {
+                    int index = j * cameraCount.x + i;
+                    CameraModel cameraModel = cameraModels[index];
+                    cameraModel.SetCameraReferenceIndexAndImageName(index, index.ToString("0000") + ".png");
+                    cameraModel.transform.localRotation = Quaternion.AngleAxis(i * horizontalDegreesPerIteration, -Vector3.up);
+                    cameraModel.transform.localPosition = facingDirection * (cameraModel.transform.localRotation * Vector3.forward) + ((j - 0.5f * numberOfVerticalIntervals) * verticalIntervalSize) * Vector3.up;
+                    cameraModel.UpdateDistanceToClosestCam(distanceToClosestVerticalCam);
+                    CheckCamDistanceWithOthersInSetup(index, Mathf.Max(0, index - 1), index);
+                }
             }
-#if UNITY_EDITOR
-            // Compute the gizmo size.
-            gizmoSize = ComputeGizmoSize(cameraModels, interCamDistanceFactor);
-            UpdateGizmosSize();
-#endif //UNITY_EDITOR
+            // Set the initial viewing position so that the viewer will look outwards from within, or inwards from without, based on the specified setup direction.
+            initialViewingPosition = (facingDirection == 1) ? parentTransform.position : parentTransform.position - 1.5f * parentTransform.localScale.magnitude * parentTransform.forward;
+        }
+
+        /// <summary>
+        /// Updates the "distance to closest camera" attribute for each camera model in the setup, by comparison with the camera at the given index.
+        /// </summary>
+        /// <param name="indexToCompare"></param> The index of the source camera with which to check relative distance.
+        /// <param name="startSourceCamIndex"></param> The source camera index at which to start checking.
+        /// <param name="endSourceCamIndex"></param> The source camera index before which to end checking.
+        public void CheckCamDistanceWithOthersInSetup(int indexOfCameraToCompare, int startSourceCamIndex, int endSourceCamIndex)
+        {
+            CameraModel cameraModel = cameraModels[indexOfCameraToCompare];
+            for(int sourceCamIndex = startSourceCamIndex; sourceCamIndex < endSourceCamIndex; sourceCamIndex++)
+            {
+                if(sourceCamIndex != indexOfCameraToCompare)
+                {
+                    CameraModel otherCameraModel = cameraModels[sourceCamIndex];
+                    float distanceBetweenCams = (cameraModel.transform.position - otherCameraModel.transform.position).magnitude;
+                    if(cameraModel.distanceToClosestCam == 0f || distanceBetweenCams < cameraModel.distanceToClosestCam)
+                        cameraModel.UpdateDistanceToClosestCam(distanceBetweenCams);
+                    if(otherCameraModel.distanceToClosestCam == 0f || distanceBetweenCams < otherCameraModel.distanceToClosestCam)
+                        otherCameraModel.UpdateDistanceToClosestCam(distanceBetweenCams);
+                }
+            }
         }
 
         /// <summary>
@@ -481,11 +425,6 @@ namespace COLIBRIVR
                 cameraModel.ParametersFromCameraModel(cameraParams);
                 cameraModel.SetCameraReferenceIndexAndImageName(cameraModel.cameraReferenceIndex, cameraModel.imageName + GeneralToolkit.ToString(iter));
             }
-# if UNITY_EDITOR
-            // Update the gizmo size.
-            gizmoSize = ComputeGizmoSize(cameraModels);
-            UpdateGizmosSize();
-#endif //UNITY_EDITOR
             // Destroy the temporary camera model.
             DestroyImmediate(cameraParams.gameObject);
         }

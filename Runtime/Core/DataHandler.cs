@@ -158,7 +158,7 @@ namespace COLIBRIVR
         /// Saves additional information related to acquisition, with the given values.
         /// </summary>
         /// <param name="cameraSetup"></param> The camera setup containing the acquisition information.
-        public void SaveCOLIBRIVRAdditionalInformation(CameraSetup cameraSetup)
+        public void SaveAdditionalSetupInformation(CameraSetup cameraSetup)
         {
             // Determine the camera model, or initialize a new one if there is none.
             CameraModel cameraParams;
@@ -166,15 +166,15 @@ namespace COLIBRIVR
                 cameraParams = cameraSetup.cameraModels[0];
             else
                 cameraParams = CameraModel.CreateCameraModel();
-            // Get the initial viewing position.
+            // Store the initial viewing position.
             Vector3 initialViewingPos = cameraSetup.initialViewingPosition;
-            // Store this information in the additional information file.
             GeneralToolkit.CreateOrClear(PathType.File, additionalInfoFile);
             StringBuilder stringBuilder = new StringBuilder();
-            stringBuilder.AppendLine("# COLIBRI VR additional information:");
+            stringBuilder.AppendLine("# Additional setup information:");
             stringBuilder.AppendLine("#   INITIAL_VIEWING_POSITION");
             string line = initialViewingPos.x + " " + initialViewingPos.y + " " + initialViewingPos.z;
             stringBuilder.AppendLine(line);
+            // Save the file.
             File.WriteAllText(additionalInfoFile, stringBuilder.ToString());
             // Delete any temporary camera model.
             if(cameraSetup.cameraModels == null)
@@ -237,6 +237,18 @@ namespace COLIBRIVR
         }
 
 #endif //UNITY_EDITOR
+
+        /// <summary>
+        /// Sets the image URLs for the given camera setup.
+        /// </summary>
+        /// <param name="cameraSetup"></param> The camera setup.
+        public void SetImageURLs(CameraSetup cameraSetup)
+        {
+            for(int iter = 0; iter < cameraSetup.cameraModels.Length; iter++)
+            {
+                cameraSetup.cameraModels[iter].imageURL = Path.Combine(colorDirectory, cameraSetup.cameraModels[iter].imageName);
+            }
+        }
 
         /// <summary>
         /// Reads the stored additional information.

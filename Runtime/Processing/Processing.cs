@@ -286,6 +286,7 @@ namespace COLIBRIVR.Processing
             {
                 // Read the pose data and camera parameters, and store it into the initial camera models.
                 COLMAPConnector.ReadImagesInformation(cameraSetup, dataHandler.dataDirectory, out dataHandler.imagePointCorrespondencesExist);
+                dataHandler.SetImageURLs(cameraSetup);
                 COLMAPConnector.ReadCamerasInformation(cameraSetup, dataHandler.dataDirectory);
                 // Only continue if camera models were successfully parsed.
                 if(cameraSetup.cameraModels != null && cameraSetup.cameraModels.Length > 0)
@@ -293,16 +294,11 @@ namespace COLIBRIVR.Processing
 #if UNITY_EDITOR
                     // If needed, provide default parameters for the additional source data information.
                     if(!File.Exists(dataHandler.additionalInfoFile))
-                        dataHandler.SaveCOLIBRIVRAdditionalInformation(cameraSetup);
+                        dataHandler.SaveAdditionalSetupInformation(cameraSetup);
 #endif //UNITY_EDITOR
                     // Read the additional information, and store it in the camera setup.
                     if(File.Exists(dataHandler.additionalInfoFile))
                         dataHandler.ReadCOLIBRIVRAdditionalInformation(cameraSetup);
-#if UNITY_EDITOR
-                    // Update the gizmo size.
-                    cameraSetup.gizmoSize = CameraSetup.ComputeGizmoSize(cameraSetup.cameraModels);
-                    cameraSetup.UpdateGizmosSize();
-#endif //UNITY_EDITOR
                 }
             }
             // Check whether data has already been processed or bundled.

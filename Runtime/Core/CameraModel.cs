@@ -122,6 +122,8 @@ namespace COLIBRIVR
         public Color gizmoColor;
         public Vector2 distanceRange;
         public MeshRenderer meshRenderer;
+        public string imageURL;
+        public float distanceToClosestCam;
 
         [SerializeField] private Vector2Int _omnidirectionalPixelResolution;
         [SerializeField] private Vector2Int _perspectivePixelResolution;
@@ -162,9 +164,14 @@ namespace COLIBRIVR
             Transform activeTransform = Selection.activeTransform;
             if(activeTransform != null)
             {
-                if(transform == activeTransform)
+                bool isSelf = (transform == activeTransform);
+                bool isOtherInSetup = (transform.parent == activeTransform.parent && !isSelf);
+                bool isParent = (transform.IsChildOf(activeTransform) && !isSelf);
+                if(isSelf)
+                    gizmoColor = selectedColor;
+                if(isOtherInSetup)
                     gizmoColor = baseColor;
-                if(transform.IsChildOf(activeTransform))
+                if(isSelf || isOtherInSetup || isParent)
                     DrawGizmo();
             }
         }
@@ -185,6 +192,8 @@ namespace COLIBRIVR
             distanceRange = new Vector2(0.3f, 1000f);
             SetCameraReferenceIndexAndImageName(1, string.Empty);
             meshRenderer = GeneralToolkit.GetOrAddComponent<MeshRenderer>(gameObject);
+            imageURL = string.Empty;
+            distanceToClosestCam = 0f;
 #if UNITY_EDITOR
             UnityEditorInternal.InternalEditorUtility.SetIsInspectorExpanded(meshRenderer, false);
 #endif //UNITY_EDITOR
@@ -199,6 +208,7 @@ namespace COLIBRIVR
             string toString = "Pixel resolution " + pixelResolution + ", Field of view " + fieldOfView;
             toString += ", Distance range " + distanceRange + ", position " + transform.position + ", rotation " + transform.rotation;
             toString += ", Image name " + imageName + ", index " + cameraReferenceIndex + ", Omnidirectional " + isOmnidirectional;
+            toString += ", URL " + imageURL + ", Distance " + distanceToClosestCam;
             return toString;
         }
 
@@ -226,6 +236,41 @@ namespace COLIBRIVR
             cameraReferenceIndex = newIndex;
             imageName = newImageName;
             gameObject.name = System.IO.Path.GetFileNameWithoutExtension(imageName) + "_Camera" + GeneralToolkit.ToString(cameraReferenceIndex);
+        }
+
+        /// <summary>
+        /// Sets the new distance to closest other camera, and updates the gizmo size accordingly.
+        /// </summary>
+        /// <param name="newDistanceToClosestCam"></param> The new distance to closest cam.
+        public void UpdateDistanceToClosestCam(float newDistanceToClosestCam)
+        {
+            distanceToClosestCam = newDistanceToClosestCam;
+            if(distanceToClosestCam == 0f)
+            {
+                focalDistance = 1f;
+            }
+            else
+            {
+                // If the camera is omnidirectional, set the radius of its sphere gizmo to a quarter of the distance to the closest other camera.
+                if(isOmnidirectional)
+                {
+                    focalDistance = 0.25f * distanceToClosestCam;
+                }
+                // If camera is perspective, set the range of its frustum gizmo.
+                else
+                {
+                    // Set sensor size to half of the inter-camera distance made smaller by the aspect ratio.
+                    float currentAspectRatio = pixelResolution.x * 1f / pixelResolution.y;
+                    float desiredSensorSize = 0.5f * distanceToClosestCam * Mathf.Min(currentAspectRatio, 1f / currentAspectRatio);
+                    // Set gizmo size as corresponding focal length.
+                    if(currentAspectRatio > 1)
+                        focalDistance = Camera.FieldOfViewToFocalLength(fieldOfView.y, desiredSensorSize);
+                    else
+                        focalDistance = Camera.FieldOfViewToFocalLength(fieldOfView.x, desiredSensorSize);
+                    // Set twice the sensor size as a maximum for gizmo size.
+                    focalDistance = Mathf.Min(focalDistance, 2 * desiredSensorSize);
+                }
+            }
         }
 
         /// <summary>

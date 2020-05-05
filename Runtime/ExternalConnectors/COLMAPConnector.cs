@@ -735,9 +735,9 @@ namespace COLIBRIVR.ExternalConnectors
             CameraModel[] camerasInFile = cameraModelList.ToArray();
             // Update the camera models from this information.
             CameraModel[] cameraModels = cameraSetup.cameraModels;
-            for(int i = 0; i < cameraModels.Length; i++)
+            for(int sourceCamIndex = 0; sourceCamIndex < cameraModels.Length; sourceCamIndex++)
             {
-                CameraModel cameraModel = cameraModels[i];
+                CameraModel cameraModel = cameraModels[sourceCamIndex];
                 // The camera models should already know the COLMAP camera they are related to.
                 int desiredCameraIndex = cameraModel.cameraReferenceIndex;
                 // Find the corresponding COLMAP camera, and provide the camera model with its parameters.
@@ -748,6 +748,7 @@ namespace COLIBRIVR.ExternalConnectors
                         cameraModel.isOmnidirectional = cameraInFile.isOmnidirectional;
                         cameraModel.pixelResolution = cameraInFile.pixelResolution;
                         cameraModel.fieldOfView = cameraInFile.fieldOfView;
+                        cameraSetup.CheckCamDistanceWithOthersInSetup(sourceCamIndex, 0, sourceCamIndex);
                     }
                 }
             }
@@ -855,12 +856,12 @@ namespace COLIBRIVR.ExternalConnectors
             }
             // Use these lists to create and fill the output array of camera models.
             cameraSetup.cameraModels = new CameraModel[positionList.Count];
-            for(int iter = 0; iter < positionList.Count; iter++)
+            for(int sourceCamIndex = 0; sourceCamIndex < positionList.Count; sourceCamIndex++)
             {
-                CameraModel cameraModel = cameraSetup.AddCameraModel(iter);
-                cameraModel.SetCameraReferenceIndexAndImageName(cameraIDList[iter], fileNameList[iter]);
-                cameraModel.transform.localPosition = positionList[iter];
-                cameraModel.transform.localRotation = rotationList[iter];
+                CameraModel cameraModel = cameraSetup.AddCameraModel(sourceCamIndex);
+                cameraModel.SetCameraReferenceIndexAndImageName(cameraIDList[sourceCamIndex], fileNameList[sourceCamIndex]);
+                cameraModel.transform.localPosition = positionList[sourceCamIndex];
+                cameraModel.transform.localRotation = rotationList[sourceCamIndex];
             }
         }
 

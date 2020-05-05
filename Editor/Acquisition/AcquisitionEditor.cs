@@ -145,27 +145,48 @@ namespace COLIBRIVR.Acquisition
             label = "Type: ";
             tooltip = "Shape of the acquisition setup.";
             EditorGUILayout.PropertyField(_propertySetupType, new GUIContent(label, tooltip));
-            if((SetupType)_propertySetupType.intValue == SetupType.Grid)
-            {
-                label = "Per row: ";
-                tooltip = "Number of cameras per row.";
-                newHorizontalCameraCount = EditorGUILayout.IntSlider(new GUIContent(label, tooltip), oldCameraCount.x, 1, 64);
-                label = "Per column: ";
-                tooltip = "Number of cameras per column.";
-                newVerticalCameraCount = EditorGUILayout.IntSlider(new GUIContent(label, tooltip), oldCameraCount.y, 1, 64);
-            }
-            else
+            int maxHorizontalCount = 64;
+            int maxVerticalCount = 64;
+            SetupType setupType = (SetupType)_propertySetupType.intValue;
+            if(setupType == SetupType.Sphere || setupType == SetupType.Cylinder)
             {
                 label = "Direction: ";
                 tooltip = "Whether the cameras face inward or outward.";
                 EditorGUILayout.PropertyField(_propertySetupDirection, new GUIContent(label, tooltip));
+            }
+            if(setupType == SetupType.Grid)
+            {
+                label = "Per row: ";
+                tooltip = "Number of cameras per row.";
+            }
+            else if(setupType == SetupType.Sphere)
+            {
                 label = "Per H arc: ";
                 tooltip = "Number of cameras per horizontal arc.";
-                newHorizontalCameraCount = EditorGUILayout.IntSlider(new GUIContent(label, tooltip), oldCameraCount.x, 1, 128);
+                maxHorizontalCount = 128;
+            }
+            else if(setupType == SetupType.Cylinder)
+            {
+                label = "Per circle section: ";
+                tooltip = "Number of cameras per circular section.";
+            }
+            newHorizontalCameraCount = EditorGUILayout.IntSlider(new GUIContent(label, tooltip), oldCameraCount.x, 1, maxHorizontalCount);
+            if(setupType == SetupType.Grid)
+            {
+                label = "Per column: ";
+                tooltip = "Number of cameras per column.";
+            }
+            else if(setupType == SetupType.Sphere)
+            {
                 label = "Per V arc: ";
                 tooltip = "Number of cameras per vertical arc.";
-                newVerticalCameraCount = EditorGUILayout.IntSlider(new GUIContent(label, tooltip), oldCameraCount.y, 1, 64);
             }
+            else if(setupType == SetupType.Cylinder)
+            {
+                label = "Along the height: ";
+                tooltip = "Number of cameras along a vertical side.";
+            }
+            newVerticalCameraCount = EditorGUILayout.IntSlider(new GUIContent(label, tooltip), oldCameraCount.y, 1, maxVerticalCount);
             _propertyCameraCount.vector2IntValue = new Vector2Int(newHorizontalCameraCount, newVerticalCameraCount);
             GUI.enabled = isGUIEnabled;
         }

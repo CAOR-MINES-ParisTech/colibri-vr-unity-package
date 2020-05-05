@@ -19,6 +19,7 @@ namespace COLIBRIVR
         protected const string _shaderNameSourceCamPosXYZ = "_SourceCamPosXYZ";
         protected const string _shaderNameSourceCamCount = "_SourceCamCount";
         protected const string _shaderNameSourceCamIsOmnidirectional = "_SourceCamIsOmnidirectional";
+        protected const string _shaderNameDistanceToClosest = "_SourceCamDistanceToClosest";
         protected const string _shaderNameMaxBlendAngle = "_MaxBlendAngle";
         protected const string _shaderNameFocalLength = "_FocalLength";
 
