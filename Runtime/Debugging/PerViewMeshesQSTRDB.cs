@@ -95,7 +95,7 @@ namespace COLIBRIVR.Debugging
             // Notify the preview window that this object will send images for preview.
             PreviewWindow.AddCaller(this, _previewCallerName);
             // Update the camera model and display the rendered preview.
-            UpdateCameraModel();
+            UpdateCameraModel(false);
         }
 
         /// <inheritdoc/>
@@ -119,7 +119,7 @@ namespace COLIBRIVR.Debugging
         {
             base.CreateMeshFromZBuffer();
             // Render the preview.
-            UpdateCameraModel();
+            UpdateCameraModel(false);
         }
 
         /// <inheritdoc/>
@@ -148,7 +148,7 @@ namespace COLIBRIVR.Debugging
             if(GeneralToolkit.HasTransformChanged(transform, ref _previousPosition, ref _previousRotation))
             {
                 DestroyMesh();
-                UpdateCameraModel();
+                UpdateCameraModel(false);
             }
         }
 
@@ -165,13 +165,14 @@ namespace COLIBRIVR.Debugging
         /// <summary>
         /// Updates the preview camera's pose and parameters.
         /// </summary>
-        public void UpdateCameraModel()
+        /// <param name="useFullResolution"></param> Whether to use the full resolution or use one limited for preview.
+        public void UpdateCameraModel(bool useFullResolution)
         {
             // Render the image and display it in the preview window.
             if(_previewCameraManager != null && _previewCameraManager.previewCamera != null)
             {
                 // Set the preview camera to the current model parameters.
-                _previewCameraManager.UpdateCameraModel(cameraModel);
+                _previewCameraManager.UpdateCameraModel(cameraModel, useFullResolution);
                 // Render the preview and display it.
                 _previewCameraManager.RenderPreviewToTarget(ref _previewCameraManager.targetTexture, false);
                 PreviewWindow.DisplayImage(_previewCallerName, _previewCameraManager.targetTexture, 0);
@@ -185,11 +186,12 @@ namespace COLIBRIVR.Debugging
         {
             // Initialize a RFloat texture to store the camera's depth information.
             RenderTexture depthTexture = new RenderTexture (1, 1, 0);
-            GeneralToolkit.CreateRenderTexture(ref depthTexture, cameraModel.pixelResolution, 24, RenderTextureFormat.RFloat, true, FilterMode.Point, TextureWrapMode.Clamp);
+            Vector2Int pixelResolution = new Vector2Int(_geometryProcessingMethod.distanceMap.width, _geometryProcessingMethod.distanceMap.height);
+            GeneralToolkit.CreateRenderTexture(ref depthTexture, pixelResolution, 24, RenderTextureFormat.RFloat, true, FilterMode.Point, TextureWrapMode.Clamp);
             // Render the preview camera's depth to this texture.
             _previewCameraManager.RenderPreviewToTarget(ref depthTexture, true);
             // Initialize the output RGB color texture.
-            GeneralToolkit.CreateRenderTexture(ref _distanceAsColorTexture, cameraModel.pixelResolution, 0, RenderTextureFormat.ARGB32, true, FilterMode.Point, TextureWrapMode.Clamp);
+            GeneralToolkit.CreateRenderTexture(ref _distanceAsColorTexture, pixelResolution, 0, RenderTextureFormat.ARGB32, true, FilterMode.Point, TextureWrapMode.Clamp);
             // Convert the depth information as color into this texture.
             Material distanceToColorMat = new Material(GeneralToolkit.shaderAcquisitionConvert01ToColor);
             Graphics.Blit(depthTexture, _distanceAsColorTexture, distanceToColorMat);

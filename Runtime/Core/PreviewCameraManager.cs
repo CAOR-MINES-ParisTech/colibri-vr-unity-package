@@ -70,7 +70,7 @@ namespace COLIBRIVR
                 // Disable the camera component so that it only renders when necessary.
                 previewCamera.enabled = false;
                 // Update the camera object from the parameters of the camera model.
-                UpdateCameraModel(sourceCameraModel);
+                UpdateCameraModel(sourceCameraModel, false);
             }
         }
         
@@ -78,7 +78,8 @@ namespace COLIBRIVR
         /// Updates the preview camera with a given set of camera models.
         /// </summary>
         /// <param name="sourceCameraModel"></param> The camera model with which to update the preview camera.
-        public void UpdateCameraModel(CameraModel sourceCameraModel)
+        /// <param name="useFullResolution"></param> Whether to use the full camera model resolution or limit it by the maximum preview resolution.
+        public void UpdateCameraModel(CameraModel sourceCameraModel, bool useFullResolution)
         {
             if(previewCamera != null)
             {
@@ -87,7 +88,8 @@ namespace COLIBRIVR
                 // Set up the camera's parameters and target texture from the given camera model.
                 previewCamera.targetTexture = null;
                 _cameraModel.TransferParametersToCamera(ref previewCamera);
-                GeneralToolkit.CreateRenderTexture(ref targetTexture, _cameraModel.pixelResolution, targetTexture.depth, targetTexture.format, targetTexture.sRGB==false, targetTexture.filterMode, targetTexture.wrapMode);
+                Vector2Int resolution = useFullResolution ? _cameraModel.pixelResolution : PreviewWindow.GetPreviewResolution(_cameraModel.pixelResolution);
+                GeneralToolkit.CreateRenderTexture(ref targetTexture, resolution, targetTexture.depth, targetTexture.format, targetTexture.sRGB==false, targetTexture.filterMode, targetTexture.wrapMode);
                 previewCamera.targetTexture = targetTexture;
             }
         }

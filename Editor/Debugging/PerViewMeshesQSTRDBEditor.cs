@@ -65,7 +65,7 @@ namespace COLIBRIVR.Debugging
 
             // If the preview window should be updated, notify the target object.
             if(shouldUpdatePreview)
-                ((PerViewMeshesQSTRDB)_targetObject).UpdateCameraModel();
+                ((PerViewMeshesQSTRDB)_targetObject).UpdateCameraModel(false);
         }
 
 #endregion //INHERITANCE_METHODS

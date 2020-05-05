@@ -147,7 +147,7 @@ namespace COLIBRIVR.Acquisition
             if(GeneralToolkit.HasTransformChanged(transform, ref _previousPosition, ref _previousRotation, ref _previousLossyScale))
             {
                 ComputeAcquisitionCameraPoses();
-                UpdatePreviewCameraModel();
+                UpdatePreviewCameraModel(false);
             }
         }
 
@@ -189,7 +189,7 @@ namespace COLIBRIVR.Acquisition
         private void OnPreviewIndexChange()
         {
             // Render a new preview image.
-            UpdatePreviewCameraModel();
+            UpdatePreviewCameraModel(false);
             // Update the scene view.
             SceneView.RepaintAll();
         }
@@ -234,21 +234,22 @@ namespace COLIBRIVR.Acquisition
                 GeneralToolkit.CreateRenderTexture(ref _previewCameraManager.targetTexture, Vector2Int.one, 0, RenderTextureFormat.ARGB32, false, FilterMode.Point, TextureWrapMode.Clamp);
                 CameraModel previewCameraModel = cameraSetup.cameraModels[cameraSetup.previewIndex];
                 _previewCameraManager.CreatePreviewCamera(gameObject, previewCameraTransform, previewCameraModel);
-                UpdatePreviewCameraModel();
+                UpdatePreviewCameraModel(false);
             }
         }
 
         /// <summary>
         /// Updates the preview camera with the camera model, and displays the rendered view in the preview window.
         /// </summary>
-        public void UpdatePreviewCameraModel()
+        /// <param name="useFullResolution"></param> Whether to use the full resolution (capture) or one limited for preview (preview window).
+        public void UpdatePreviewCameraModel(bool useFullResolution)
         {
             // The preview camera manager, and its camera, need to have been initialized in a previous step.
             if(_previewCameraManager != null && _previewCameraManager.previewCamera != null)
             {
                 // Update the preview camera's camera model, and render the preview image.
                 CameraModel cameraParams = cameraSetup.cameraModels[cameraSetup.previewIndex];
-                _previewCameraManager.UpdateCameraModel(cameraParams);
+                _previewCameraManager.UpdateCameraModel(cameraParams, useFullResolution);
                 _previewCameraManager.RenderPreviewToTarget(ref _previewCameraManager.targetTexture, false);
                 int previewMaxIndex = cameraSetup.cameraModels.Length - 1;
                 PreviewWindow.DisplayImage(_colorCallerName, _previewCameraManager.targetTexture, previewMaxIndex);
@@ -367,7 +368,7 @@ namespace COLIBRIVR.Acquisition
                 cameraSetup.previewIndex = i;
                 string imageName = cameraSetup.cameraModels[i].imageName;
                 // Update the camera model for the preview camera, thereby rendering to the target color and depth textures.
-                UpdatePreviewCameraModel();
+                UpdatePreviewCameraModel(true);
                 // Save the color texture as a file.
                 GeneralToolkit.SaveRenderTextureToPNG(_previewCameraManager.targetTexture, Path.Combine(dataHandler.colorDirectory, imageName));
                 // If depth data is to be acquired, save the scene's depth (encoded as a 3-channel RGB texture) as a file.
@@ -389,7 +390,7 @@ namespace COLIBRIVR.Acquisition
             GeneralToolkit.ResetCancelableProgressBar(false, false);
             // Reset the preview camera's pose.
             cameraSetup.previewIndex = initialPreviewIndex;
-            UpdatePreviewCameraModel();
+            UpdatePreviewCameraModel(false);
             UnityEditorInternal.InternalEditorUtility.RepaintAllViews();
         }
 

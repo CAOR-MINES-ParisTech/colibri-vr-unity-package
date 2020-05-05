@@ -304,7 +304,7 @@ namespace COLIBRIVR.Processing
                 return;
             // Render to the preview camera a first time to initialize all buffers correctly.
             _previewCameraModel.pixelResolution = _textureMapResolution;
-            _previewCameraManager.UpdateCameraModel(_previewCameraModel);
+            _previewCameraManager.UpdateCameraModel(_previewCameraModel, true);
             _previewCameraManager.RenderPreviewToTarget(ref _previewCameraManager.targetTexture, false);
             // Render the mesh to the preview camera's target texture.
             Camera.onPreCull += DrawSubmeshAsTextureMapWithCamera;

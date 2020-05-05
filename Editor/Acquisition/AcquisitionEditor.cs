@@ -118,7 +118,7 @@ namespace COLIBRIVR.Acquisition
             if(shouldUpdatePreview)
             {
                 _targetObject.ComputeAcquisitionCameraPoses();
-                _targetObject.UpdatePreviewCameraModel();
+                _targetObject.UpdatePreviewCameraModel(false);
                 SceneView.RepaintAll();
             }
         }

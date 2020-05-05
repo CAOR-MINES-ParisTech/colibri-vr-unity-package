@@ -82,7 +82,7 @@ namespace COLIBRIVR
                 settings.COLMAPSettings = (COLMAPSettings) ScriptableObject.CreateInstance<COLMAPSettings>().Initialize();
                 settings.BlenderSettings = (BlenderSettings) ScriptableObject.CreateInstance<BlenderSettings>().Initialize();
                 settings.InstantMeshesSettings = (InstantMeshesSettings) ScriptableObject.CreateInstance<InstantMeshesSettings>().Initialize();
-                settings.previewMaxResolution = 256;
+                settings.previewMaxResolution = 512;
                 AssetDatabase.CreateAsset(settings, settingsAssetPath);
                 AssetDatabase.AddObjectToAsset(settings.COLMAPSettings, settingsAssetPath);
                 AssetDatabase.AddObjectToAsset(settings.BlenderSettings, settingsAssetPath);

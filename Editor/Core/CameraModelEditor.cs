@@ -21,15 +21,15 @@ namespace COLIBRIVR
 #region CONST_FIELDS
 
         private const int _perspectiveMinResolutionWidth = 1;
-        private const int _perspectiveMaxResolutionWidth = 2048;
+        private const int _perspectiveMaxResolutionWidth = 8192;
         private const int _perspectiveMinResolutionHeight = 1;
-        private const int _perspectiveMaxResolutionHeight = 2048;
+        private const int _perspectiveMaxResolutionHeight = 8192;
         private const float _perspectiveMinHorizontalFOV = 1f;
         private const float _perspectiveMaxHorizontalFOV = 179f;
         private const float _perspectiveMinVerticalFOV = 1f;
         private const float _perspectiveMaxVerticalFOV = 179f;
         private const int _omnidirectionalMinResolutionWidth = 8;
-        private const int _omnidirectionalMaxResolutionWidth = 4096;
+        private const int _omnidirectionalMaxResolutionWidth = 8192;
 
 #endregion //CONST_FIELDS
 

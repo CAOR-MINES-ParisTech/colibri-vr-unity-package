@@ -176,7 +176,7 @@ namespace COLIBRIVR.Processing
                         break;
                     }
                     // Set the preview camera manager's camera model to the current source camera.
-                    previewCameraManager.UpdateCameraModel(cameraSetup.cameraModels[i]);
+                    previewCameraManager.UpdateCameraModel(cameraSetup.cameraModels[i], true);
                     // Render the depth data seen by this camera as an RFloat texture.
                     previewCameraManager.RenderPreviewToTarget(ref previewCameraManager.targetTexture, true);
                     // Resize the rendered texture to the output array's resolution.
