@@ -1495,10 +1495,7 @@ namespace COLIBRIVR
             // Try to build the asset bundles for the current editor's platform.
             try
             {
-                BuildTarget platform = BuildTarget.StandaloneWindows;
-#if UNITY_EDITOR_OSX
-                platform = BuildTarget.StandaloneOSX;
-#endif //UNITY_EDITOR_OSX
+                BuildTarget platform = EditorUserBuildSettings.activeBuildTarget;
                 BuildPipeline.BuildAssetBundles(relativeBundleDirectory, bundles, BuildAssetBundleOptions.None, platform);
                 return true;
             }
