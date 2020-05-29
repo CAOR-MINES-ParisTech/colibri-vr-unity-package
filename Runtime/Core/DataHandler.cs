@@ -174,6 +174,14 @@ namespace COLIBRIVR
             stringBuilder.AppendLine("#   INITIAL_VIEWING_POSITION");
             string line = initialViewingPos.x + " " + initialViewingPos.y + " " + initialViewingPos.z;
             stringBuilder.AppendLine(line);
+            // Store the minimum/maximum distance range
+            stringBuilder.AppendLine("#   Distance ranges with one line of data per camera:");
+            stringBuilder.AppendLine("#   CAMERA_ID DISTANCE_RANGE_MIN DISTANCE_RANGE_MAX");
+            foreach(CameraModel camera in cameraSetup.cameraModels)
+            {
+                Vector2 distanceRange = camera.distanceRange;
+                stringBuilder.AppendLine(camera.cameraReferenceIndex + " " + distanceRange.x + " " + distanceRange.y);
+            }
             // Save the file.
             File.WriteAllText(additionalInfoFile, stringBuilder.ToString());
             // Delete any temporary camera model.
@@ -257,15 +265,35 @@ namespace COLIBRIVR
         public void ReadCOLIBRIVRAdditionalInformation(CameraSetup cameraSetup)
         {
             string[] lines = File.ReadAllLines(additionalInfoFile);
-            foreach(string line in lines)
+            for(int i=0; i<lines.Length; ++i)
             {
-                if(!line.StartsWith("#"))
+                if(lines[i].Contains("INITIAL_VIEWING_POSITION"))
                 {
-                    string[] split = line.Split(' ');
-                    if(split.Length > 2)
+                    string[] split = lines[++i].Split(' ');
+                    if(split.Length == 3)
                     {
                         Vector3 newInitialViewingPosition = new Vector3(GeneralToolkit.ParseFloat(split[0]), GeneralToolkit.ParseFloat(split[1]), GeneralToolkit.ParseFloat(split[2]));
                         cameraSetup.SetAdditionalParameters(newInitialViewingPosition);
+                    }
+                    continue;
+                }
+
+                if(lines[i].Contains("DISTANCE_RANGE"))
+                {
+                    while(i+1 < lines.Length && !lines[i+1].StartsWith("#"))
+                    {
+                        string[] split = lines[++i].Split(' ');
+                        if(split.Length == 3)
+                        {
+                            int cameraReferenceIndex = GeneralToolkit.ParseInt(split[0]);
+                            Vector2 newDistanceRange = new Vector2(GeneralToolkit.ParseFloat(split[1]), GeneralToolkit.ParseFloat(split[2]));
+                            // Find the referenced camera and set its distance range
+                            foreach(CameraModel camera in cameraSetup.cameraModels)
+                            {
+                                if(camera.cameraReferenceIndex == cameraReferenceIndex)
+                                    camera.distanceRange = newDistanceRange;
+                            } 
+                        }
                     }
                 }
             }
