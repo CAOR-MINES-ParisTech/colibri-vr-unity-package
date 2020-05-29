@@ -787,7 +787,7 @@ namespace COLIBRIVR.ExternalConnectors
                 string TX = GeneralToolkit.ToString(position.x);
                 string TY = GeneralToolkit.ToString(position.y);
                 string TZ = GeneralToolkit.ToString(position.z);
-                string CAMERA_ID = GeneralToolkit.ToString(cameraModel.cameraReferenceIndex);
+                string CAMERA_ID = GeneralToolkit.ToString(cameraModels[i].cameraReferenceIndex);
                 string NAME = cameraModels[i].imageName;
                 string line = IMAGE_ID + " " + QW + " " + QX + " " + QY + " " + QZ + " " + TX + " " + TY + " " + TZ + " " + CAMERA_ID + " " + NAME;
                 // For each image, append one line with the parameters and one empty line.
