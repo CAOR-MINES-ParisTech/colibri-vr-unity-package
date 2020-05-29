@@ -307,7 +307,7 @@ namespace COLIBRIVR
                 {
                     int index = j * cameraCount.x + i;
                     CameraModel cameraModel = cameraModels[index];
-                    cameraModel.SetCameraReferenceIndexAndImageName(index, index.ToString("0000") + ".png");
+                    cameraModel.SetCameraReferenceIndexAndImageName(index + 1, index.ToString("0000") + ".png");
                     Vector2 planePos = (new Vector2(i, j) - 0.5f * numberOfIntervals) * intervalSize;
                     cameraModel.transform.localPosition = planePos.x * Vector3.right + planePos.y * Vector3.up;
                     cameraModel.transform.localRotation = Quaternion.identity;
@@ -339,7 +339,7 @@ namespace COLIBRIVR
                 {
                     int index = j * cameraCount.x + i;
                     CameraModel cameraModel = cameraModels[index];
-                    cameraModel.SetCameraReferenceIndexAndImageName(index, index.ToString("0000") + ".png");
+                    cameraModel.SetCameraReferenceIndexAndImageName(index + 1, index.ToString("0000") + ".png");
                     cameraModel.transform.localRotation = Quaternion.AngleAxis(i * degreesPerIteration.x, -Vector3.up) * Quaternion.AngleAxis(-90f + (j + 0.5f) * degreesPerIteration.y, -Vector3.right);
                     cameraModel.transform.localPosition = facingDirection * (cameraModel.transform.localRotation * Vector3.forward);
                     CheckCamDistanceWithOthersInSetup(index, Mathf.Max(0, index - cameraCount.x), index);
@@ -370,7 +370,7 @@ namespace COLIBRIVR
                 {
                     int index = j * cameraCount.x + i;
                     CameraModel cameraModel = cameraModels[index];
-                    cameraModel.SetCameraReferenceIndexAndImageName(index, index.ToString("0000") + ".png");
+                    cameraModel.SetCameraReferenceIndexAndImageName(index + 1, index.ToString("0000") + ".png");
                     cameraModel.transform.localRotation = Quaternion.AngleAxis(i * horizontalDegreesPerIteration, -Vector3.up);
                     cameraModel.transform.localPosition = facingDirection * (cameraModel.transform.localRotation * Vector3.forward) + ((j - 0.5f * numberOfVerticalIntervals) * verticalIntervalSize) * Vector3.up;
                     cameraModel.UpdateDistanceToClosestCam(distanceToClosestVerticalCam);
