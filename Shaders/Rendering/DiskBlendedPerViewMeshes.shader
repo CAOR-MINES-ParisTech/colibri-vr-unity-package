@@ -67,7 +67,7 @@ Shader "COLIBRIVR/Rendering/DiskBlendedPerViewMeshes"
             {
                 uint sourceCamIndex = UNITY_ACCESS_INSTANCED_PROP(InstanceProperties, _SourceCamIndex);
                 clipXYZW = UnityObjectToClipPos(i.objectXYZW);
-                float normalizedDeviceZ = saturate(clipXYZW.z / clipXYZW.w);
+                float normalizedDeviceZ = clipXYZW.z / clipXYZW.w;
                 clipXYZW.z = clipXYZW.w * ScaleNormalizedDeviceZ(sourceCamIndex, normalizedDeviceZ);
                 draw_v2f o;
                 o.sourceCamIndex = sourceCamIndex;

@@ -45,6 +45,11 @@
     /// </summary>
     float ScaleNormalizedDeviceZ(uint renderingIndex, float normalizedDeviceZ)
     {
+        if(UNITY_NEAR_CLIP_VALUE < 0)   // OpenGL uses z ∈ [-1,1]
+            normalizedDeviceZ = (normalizedDeviceZ + 1.0) * 0.5;
+
+        normalizedDeviceZ = saturate(normalizedDeviceZ);
+
         return (renderingIndex + _ScalingMargin + (1.0 - _ScalingMargin) * normalizedDeviceZ) / _SourceCamCount;
     }
 
@@ -54,7 +59,12 @@
     float UnscaleNormalizedDeviceZ(float scaledNormalizedDeviceZ)
     {
         uint renderingIndex = floor(scaledNormalizedDeviceZ * _SourceCamCount);
-        return (scaledNormalizedDeviceZ * _SourceCamCount - 1.0 * renderingIndex - _ScalingMargin) / (1.0 - _ScalingMargin);
+        float unscaledNormalizedDeviceZ = (scaledNormalizedDeviceZ * _SourceCamCount - 1.0 * renderingIndex - _ScalingMargin) / (1.0 - _ScalingMargin);
+
+        if(UNITY_NEAR_CLIP_VALUE < 0)   // OpenGL expects z ∈ [-1,1]
+            unscaledNormalizedDeviceZ = 2.0 * unscaledNormalizedDeviceZ - 1.0;
+
+        return unscaledNormalizedDeviceZ;
     }
 
     /// <summary>
@@ -88,7 +98,16 @@
         float4 frameColor = tex2D(_StoredColorTexture, screenUV);
         float frameStoredZ = tex2D(_StoredDepthTexture, screenUV).r;
         float frameViewZ = _ProjectionParams.z;
-        if(frameStoredZ >= _ScalingMargin)
+
+    /// Compensate for different depth buffer conventions used by Direct3D and OpenGL for initial depth test
+    /// (LinearEyeDepth will then decode correct depth in platform-independent way)
+    #if defined(UNITY_REVERSED_Z)
+        float frameStoredZreversed = frameViewZ;
+    #else
+        float frameStoredZreversed = 1.0 - frameViewZ;
+    #endif
+
+        if(frameStoredZreversed >= _ScalingMargin)
         {
             float frameNormalizedDeviceZ = UnscaleNormalizedDeviceZ(frameStoredZ);
             frameViewZ = abs(LinearEyeDepth(frameNormalizedDeviceZ));
