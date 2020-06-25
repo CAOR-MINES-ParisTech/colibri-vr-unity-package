@@ -18,6 +18,7 @@ Shader "COLIBRIVR/Rendering/TexturedPerViewMeshesDT"
         _UseDebugColor ("Whether to use the debug color to mark disocclusion triangles", int) = 0
         _MipMapLevel ("The mip map level to use for blurring disocclusion triangles", int) = 0
         [PerRendererData] _SourceCamIndex ("Source camera index", int) = 0
+        [PerRendererData] _SourceCamPosXYZ ("Source camera position", Vector) = (0, 0, 0)
     }
     SubShader
     {
@@ -62,6 +63,7 @@ Shader "COLIBRIVR/Rendering/TexturedPerViewMeshesDT"
             UNITY_DECLARE_TEX2DARRAY(_ColorData);
             UNITY_INSTANCING_BUFFER_START(InstanceProperties)
                 UNITY_DEFINE_INSTANCED_PROP(int, _SourceCamIndex)
+                UNITY_DEFINE_INSTANCED_PROP(float3, _SourceCamPosXYZ)
             UNITY_INSTANCING_BUFFER_END(InstanceProperties)
             float _OrthogonalityParameter;
             float _TriangleSizeParameter;
@@ -89,7 +91,7 @@ Shader "COLIBRIVR/Rendering/TexturedPerViewMeshesDT"
     {
         float3 triangleCenter = (vertex0 + vertex1 + vertex2) / 3.0;
         float3 triangleNormal = normalize(cross(vertex2 - vertex0, vertex1 - vertex0));
-        float3 normalizedFrameCamToTriangle = normalize(triangleCenter - 0);
+        float3 normalizedFrameCamToTriangle = normalize(triangleCenter - _SourceCamPosXYZ);
         bool orthogonalityCheck = abs(dot(triangleNormal, normalizedFrameCamToTriangle)) < _OrthogonalityParameter;
         if(orthogonalityCheck)
         {
