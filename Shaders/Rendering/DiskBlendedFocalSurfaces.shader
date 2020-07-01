@@ -65,7 +65,6 @@ Shader "COLIBRIVR/Rendering/DiskBlendedFocalSurfaces"
                 float3 viewCamToSourceCamWorldXYZ : TEXCOORD1;
                 float4 worldXYZW : TEXCOORD2;
                 uint isOmnidirectional : TEXCOORD3;
-                uint sourceCamIndex : TEXCOORD4;
             };
     /// ENDSTRUCTS
 
@@ -75,8 +74,8 @@ Shader "COLIBRIVR/Rendering/DiskBlendedFocalSurfaces"
                 UNITY_SETUP_INSTANCE_ID(i);
                 clipXYZW = UnityObjectToClipPos(i.objectXYZW);
                 draw_v2f o;
-                o.sourceCamIndex = UNITY_ACCESS_INSTANCED_PROP(InstanceProperties, _SourceCamIndex);
-                o.texArrayUVZ = float3(i.texUV, o.sourceCamIndex);
+                uint sourceCamIndex = UNITY_ACCESS_INSTANCED_PROP(InstanceProperties, _SourceCamIndex);
+                o.texArrayUVZ = float3(i.texUV, sourceCamIndex);
                 o.viewCamToSourceCamWorldXYZ = UNITY_ACCESS_INSTANCED_PROP(InstanceProperties, _SourceCamPosXYZ) - _WorldSpaceCameraPos.xyz;
                 o.worldXYZW = mul(unity_ObjectToWorld, i.objectXYZW);
                 o.isOmnidirectional = UNITY_ACCESS_INSTANCED_PROP(InstanceProperties, _SourceCamIsOmnidirectional);
@@ -88,7 +87,8 @@ Shader "COLIBRIVR/Rendering/DiskBlendedFocalSurfaces"
             base_fOUT draw_frag (draw_v2f i)
             {
                 base_fOUT o;
-                if(i.texArrayUVZ.z == _ExcludedSourceView)
+                uint sourceCamIndex = round(i.texArrayUVZ.z);
+                if(sourceCamIndex == _ExcludedSourceView)
                     clip(-1);
                 float weight = GetViewpointWeightForFragment(i.worldXYZW, i.viewCamToSourceCamWorldXYZ, i.isOmnidirectional);
                 if(weight <= _MinWeight)
@@ -102,7 +102,7 @@ Shader "COLIBRIVR/Rendering/DiskBlendedFocalSurfaces"
                 {
                     fixed3 colorRGB;
                     if(_IsColorSourceCamIndices == 1)
-                        colorRGB = GetColorForIndex(i.sourceCamIndex, _SourceCamCount);
+                        colorRGB = GetColorForIndex(sourceCamIndex, _SourceCamCount);
                     else
                         colorRGB = UNITY_SAMPLE_TEX2DARRAY(_ColorData, i.texArrayUVZ).rgb;
                     o.color = weight * fixed4(colorRGB, 1);

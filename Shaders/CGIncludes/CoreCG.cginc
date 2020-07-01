@@ -157,6 +157,58 @@
     {
         return 1.0 / ((1.0/clampLimits.y - 1.0/clampLimits.x) * value01 + 1.0/clampLimits.x);
     }
+    
+    /// <summary>
+    /// Returns true if the depth buffer is 1.0 at the near plane decreasing to 0.0 at the far plane, false otherwise.
+    /// </summary>
+    inline bool IsReversedDepthBuffer()
+    {
+        bool reversedZ = false;
+#if defined(UNITY_REVERSED_Z)
+        reversedZ = true;
+#endif
+        return reversedZ;
+    }
+
+    /// <summary>
+    /// Returns true if the platform is OpenGL-like, false if the platform is Direct3D-like.
+    /// </summary>
+    inline bool IsOpenGLLike()
+    {
+        return (UNITY_NEAR_CLIP_VALUE < 0);
+    }
+
+    /// <summary>
+    /// Reverses the given 0.0-1.0 depth value if the platform uses a reversed depth buffer.
+    /// </summary>
+    float ReverseDepthIfReversedBuffer(float z)
+    {
+        return IsReversedDepthBuffer() ? (1.0 - z) : z;
+    }
+
+    /// <summary>
+    /// Converts a z-value from normalized device coordinates to a space where z=0.0 at the near plane and z=1.0 at the far plane.
+    /// </summary>
+    inline float NDCToTraditional01(float z)
+    {
+        float outZ = z;
+        if(IsOpenGLLike())
+            outZ = ((outZ + 1.0) * 0.5);
+        outZ = ReverseDepthIfReversedBuffer(outZ);
+        return outZ;
+    }
+
+    /// <summary>
+    /// Converts a z-value from a space where z=0.0 at the near plane and z=1.0 at the far plane to platform-dependent normalized device coordinates.
+    /// </summary>
+    inline float Traditional01ToNDC(float z)
+    {
+        float outZ = z;
+        outZ = ReverseDepthIfReversedBuffer(outZ);
+        if(IsOpenGLLike())
+            outZ = ((outZ * 2.0) - 1.0);
+        return outZ;
+    }
 
 /// ENDMETHODS
 

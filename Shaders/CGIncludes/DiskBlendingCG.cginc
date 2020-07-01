@@ -40,31 +40,29 @@
 /// METHODS
 
     /// <summary>
-    /// Scales the Z value in NDC space to ensure that objects are not discarded because of the ZTest.
-    /// Using ZTest Always or Blend One One was problematic for objects with self-occlusions. 
+    /// Scales the Z value, as a value between 0.0 (near) and 1.0 (far), so as to assign disjoint subranges of depth to each source camera.
     /// </summary>
-    float ScaleNormalizedDeviceZ(uint renderingIndex, float normalizedDeviceZ)
+    float ScaleZ01(uint renderingIndex, float z01)
     {
-        if(UNITY_NEAR_CLIP_VALUE < 0)   // OpenGL uses z ∈ [-1,1]
-            normalizedDeviceZ = (normalizedDeviceZ + 1.0) * 0.5;
-
-        normalizedDeviceZ = saturate(normalizedDeviceZ);
-
-        return (renderingIndex + _ScalingMargin + (1.0 - _ScalingMargin) * normalizedDeviceZ) / _SourceCamCount;
+        float offset = _SourceCamCount - 1.0 - renderingIndex;
+        return (offset + _ScalingMargin + (1.0 - 2.0 * _ScalingMargin) * z01) / _SourceCamCount;
     }
 
     /// <summary>
-    /// Unscales the previously-scaled Z value in NDC space.
+    /// Unscales the previously-scaled Z value.
     /// </summary>
-    float UnscaleNormalizedDeviceZ(float scaledNormalizedDeviceZ)
+    float UnscaleZ01(float scaledZ01)
     {
-        uint renderingIndex = floor(scaledNormalizedDeviceZ * _SourceCamCount);
-        float unscaledNormalizedDeviceZ = (scaledNormalizedDeviceZ * _SourceCamCount - 1.0 * renderingIndex - _ScalingMargin) / (1.0 - _ScalingMargin);
+        float offset = floor(scaledZ01 * _SourceCamCount);
+        return ((scaledZ01 * _SourceCamCount) - offset - _ScalingMargin) / (1.0 - 2.0 * _ScalingMargin);
+    }
 
-        if(UNITY_NEAR_CLIP_VALUE < 0)   // OpenGL expects z ∈ [-1,1]
-            unscaledNormalizedDeviceZ = 2.0 * unscaledNormalizedDeviceZ - 1.0;
-
-        return unscaledNormalizedDeviceZ;
+    /// <summary>
+    /// Returns the depth value in normalized device coordinates from the scaled depth buffer.
+    /// </summary>
+    float ScaledDepthBufferToNDC(float scaledZ)
+    {
+        return Traditional01ToNDC(UnscaleZ01(ReverseDepthIfReversedBuffer(scaledZ)));
     }
 
     /// <summary>
@@ -92,35 +90,36 @@
     /// <summary>
     /// Based on the success of a soft ZTest, blends the color from the frame buffer with the color of the given point.
     /// </summary>
-    fixed4 ComputeBlendedColor(float2 screenUV, float meshViewZ, fixed4 meshColor)
+    fixed4 ComputeBlendedColor(float4 viewportXYZW, fixed4 meshColor)
     {
         fixed4 outColor = 0;
+        // Get the stored color and depth for the frame.
+        float2 screenUV = viewportXYZW.xy / _ScreenParams.xy;
         float4 frameColor = tex2D(_StoredColorTexture, screenUV);
-        float frameStoredZ = tex2D(_StoredDepthTexture, screenUV).r;
-        float frameViewZ = _ProjectionParams.z;
-
-    /// Compensate for different depth buffer conventions used by Direct3D and OpenGL for initial depth test
-    /// (LinearEyeDepth will then decode correct depth in platform-independent way)
-    #if defined(UNITY_REVERSED_Z)
-        float frameStoredZreversed = frameViewZ;
-    #else
-        float frameStoredZreversed = 1.0 - frameViewZ;
-    #endif
-
-        if(frameStoredZreversed >= _ScalingMargin)
+        float frameDepth = tex2D(_StoredDepthTexture, screenUV).r;
+        // If nothing has been drawn in this fragment, the stored Z is equal to zero.
+        // The corresponding view-space depth is the far clip plane.
+        float absFrameViewZ = _ProjectionParams.z;
+        bool frameIsBackground = true;
+        // If something has been drawn in this fragment, the stored Z is necessarily non-zero (thanks to _ScalingMargin).
+        // In this case, the stored view-space depth can be computed by unscaling this stored value.
+        if(frameDepth != ReverseDepthIfReversedBuffer(1.0))
         {
-            float frameNormalizedDeviceZ = UnscaleNormalizedDeviceZ(frameStoredZ);
-            frameViewZ = abs(LinearEyeDepth(frameNormalizedDeviceZ));
+            absFrameViewZ = abs(LinearEyeDepth(ScaledDepthBufferToNDC(frameDepth)));
+            frameIsBackground = false;
         }
-        float furthestZ = max(meshViewZ, frameViewZ);
-        float closestZ = min(meshViewZ, frameViewZ);
+        // Compare the stored value and the one to draw in view space to determine which is closer.
+        float absMeshViewZ = abs(LinearEyeDepth(ScaledDepthBufferToNDC(viewportXYZW.z)));
+        float furthestZ = max(absMeshViewZ, absFrameViewZ);
+        float closestZ = min(absMeshViewZ, absFrameViewZ);
         float distanceFactor = furthestZ / closestZ - 1.0;
         bool meshFragmentCloseToExistingFragment = (distanceFactor < _DepthFactor);
-        bool meshFragmentBehindExistingFragment = (meshViewZ == furthestZ && !meshFragmentCloseToExistingFragment);
-        bool meshFragmentInFrontOfExistingFragment = (meshViewZ == closestZ && !meshFragmentCloseToExistingFragment);
+        bool meshFragmentBehindExistingFragment = ((absMeshViewZ == furthestZ) && !meshFragmentCloseToExistingFragment);
+        bool meshFragmentInFrontOfExistingFragment = ((absMeshViewZ == closestZ) && !meshFragmentCloseToExistingFragment);
+        // Perform a soft Z-test, by blending the colors if the depth values are close together.
         if(meshFragmentBehindExistingFragment)
             clip(-1);
-        else if(meshFragmentInFrontOfExistingFragment)
+        else if(meshFragmentInFrontOfExistingFragment || frameIsBackground)
             outColor = meshColor;
         else if(meshFragmentCloseToExistingFragment)
             outColor = frameColor + meshColor;

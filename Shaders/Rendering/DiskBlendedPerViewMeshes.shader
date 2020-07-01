@@ -15,7 +15,6 @@ Shader "COLIBRIVR/Rendering/DiskBlendedPerViewMeshes"
 {
     Properties
     {
-        _MainTex ("Current camera target", 2D) = "white" {}
         _ColorData ("Color data", 2DArray) = "white" {}
         _MaxBlendAngle ("Max blend angle", float) = 0.0
         _ClipNullValues ("Clip null values", int) = 0
@@ -55,25 +54,24 @@ Shader "COLIBRIVR/Rendering/DiskBlendedPerViewMeshes"
             {
                 float3 texArrayUVZ : TEXCOORD0;
                 float3 viewCamToSourceCamWorldXYZ : TEXCOORD1;
-                float viewZ : TEXCOORD2;
-                float4 worldXYZW : TEXCOORD3;
-                uint isOmnidirectional : TEXCOORD4;
-                uint sourceCamIndex : TEXCOORD5;
+                float4 worldXYZW : TEXCOORD2;
+                uint isOmnidirectional : TEXCOORD3;
             };
     /// ENDSTRUCTS
 
     /// VERTEX
             draw_v2f draw_vert (base_vIN i, out float4 clipXYZW : SV_POSITION)
             {
-                uint sourceCamIndex = UNITY_ACCESS_INSTANCED_PROP(InstanceProperties, _SourceCamIndex);
-                clipXYZW = UnityObjectToClipPos(i.objectXYZW);
-                float normalizedDeviceZ = clipXYZW.z / clipXYZW.w;
-                clipXYZW.z = clipXYZW.w * ScaleNormalizedDeviceZ(sourceCamIndex, normalizedDeviceZ);
                 draw_v2f o;
-                o.sourceCamIndex = sourceCamIndex;
+                // Scale the depth buffer values so that overlapping per-view meshes are not discarded automatically due to the ZTest.
+                // This is used as an alternative to methods based on ZTest Always or Blend One One, which were problematic for objects with self-occlusions. 
+                clipXYZW = UnityObjectToClipPos(i.objectXYZW);
+                uint sourceCamIndex = UNITY_ACCESS_INSTANCED_PROP(InstanceProperties, _SourceCamIndex);
+                float normalizedDeviceZ = clipXYZW.z / clipXYZW.w;
+                clipXYZW.z = clipXYZW.w * Traditional01ToNDC(ScaleZ01(sourceCamIndex, NDCToTraditional01(normalizedDeviceZ)));
+                // Store other values in the output element for use during the fragment step.
                 o.texArrayUVZ = float3(i.texUV, sourceCamIndex);
                 o.viewCamToSourceCamWorldXYZ = UNITY_ACCESS_INSTANCED_PROP(InstanceProperties, _SourceCamPosXYZ) - _WorldSpaceCameraPos.xyz;
-                o.viewZ = abs(UnityObjectToViewPos(i.objectXYZW).z);
                 o.worldXYZW = mul(unity_ObjectToWorld, i.objectXYZW);
                 o.isOmnidirectional = UNITY_ACCESS_INSTANCED_PROP(InstanceProperties, _SourceCamIsOmnidirectional);
                 return o;
@@ -84,20 +82,25 @@ Shader "COLIBRIVR/Rendering/DiskBlendedPerViewMeshes"
             base_fOUT draw_frag (draw_v2f i, float4 viewportXYZW : SV_POSITION)
             {
                 base_fOUT o;
-                if(i.texArrayUVZ.z == _ExcludedSourceView)
+                // If the view being rendered should be excluded, exit.
+                uint sourceCamIndex = round(i.texArrayUVZ.z);
+                if(sourceCamIndex == _ExcludedSourceView)
                     clip(-1);
+                // Compute the blending weight.
                 float weight = GetViewpointWeightForFragment(i.worldXYZW, i.viewCamToSourceCamWorldXYZ, i.isOmnidirectional);
+                // If the weight is below the minimum threshold, exit.
                 if(_ClipNullValues && weight <= _MinWeight)
                     clip(-1);
-                float2 screenUV = viewportXYZW.xy / _ScreenParams.xy;
-                float meshViewZ = i.viewZ;
+                // Get the color of the element being drawn.
                 fixed3 colorRGB;
                 if(_IsColorSourceCamIndices == 1)
-                    colorRGB = GetColorForIndex(i.sourceCamIndex, _SourceCamCount);
+                    colorRGB = GetColorForIndex(sourceCamIndex, _SourceCamCount);
                 else
                     colorRGB = UNITY_SAMPLE_TEX2DARRAY(_ColorData, i.texArrayUVZ).rgb;
+                // Multiply this color by the blending weight.
                 fixed4 meshColor = weight * fixed4(colorRGB, 1);
-                o.color = ComputeBlendedColor(screenUV, meshViewZ, meshColor);
+                // Set the output color as a blend between this weighted color and the existing output color (stored in a texture).
+                o.color = ComputeBlendedColor(viewportXYZW, meshColor);
                 return o;
             }
     /// ENDFRAGMENT
@@ -122,20 +125,31 @@ Shader "COLIBRIVR/Rendering/DiskBlendedPerViewMeshes"
             #pragma fragment output_frag
     /// ENDHEADER
 
-    /// PROPERTIES
-            sampler2D _MainTex;
-    /// ENDPROPERTIES
-
     /// FRAGMENT
             depth_fOUT output_frag (base_v2f i)
             {
                 depth_fOUT o;
+                // Normalize the color in the stored color texture by its alpha value.
                 o.color = tex2D(_StoredColorTexture, i.texUV);
-                if(o.color.a == 0 || (_ClipNullValues && o.color.a == _MinWeight))
-                    o.color = tex2D(_MainTex, i.texUV);
+                NormalizeByAlpha(o.color);
+                // Get the stored depth.
+                float frameDepth = tex2D(_StoredDepthTexture, i.texUV).r;
+                // By the previous steps, this depth can only be equal to zero if nothing has been written in this fragment.
+                // If this is not the case, something has thus been written.
+                if(frameDepth != ReverseDepthIfReversedBuffer(1.0))
+                {
+                    // If what has been written has a weight above the minimum threshold, write this element at the stored depth.
+                    if(!_ClipNullValues || o.color.a > _MinWeight)
+                    {
+                        o.depth = ScaledDepthBufferToNDC(frameDepth);
+                    }
+                }
+                // Otherwise, nothing has been written, and the stored color is the background color.
+                // In this case, write this element at the background depth.
                 else
-                    NormalizeByAlpha(o.color);
-                o.depth = UnscaleNormalizedDeviceZ(tex2D(_StoredDepthTexture, i.texUV).r);
+                {
+                    o.depth = Traditional01ToNDC(1.0);
+                }
                 return o;
             }
     /// ENDFRAGMENT

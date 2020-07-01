@@ -21,7 +21,7 @@ namespace COLIBRIVR.Processing
 
         public const string shaderNameColorData = "_ColorData";
         public const string colorDataAssetName = "ColorTextureArray";
-        public const bool useMipMaps = true;
+        public const bool useMipMaps = false;
 
 #endregion //CONST_FIELDS
 
