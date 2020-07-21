@@ -104,7 +104,7 @@ Shader "COLIBRIVR/Rendering/DiskBlendedFocalSurfaces"
                     if(_IsColorSourceCamIndices == 1)
                         colorRGB = GetColorForIndex(sourceCamIndex, _SourceCamCount);
                     else
-                        colorRGB = UNITY_SAMPLE_TEX2DARRAY(_ColorData, i.texArrayUVZ).rgb;
+                        colorRGB = UNITY_SAMPLE_TEX2DARRAY_LOD(_ColorData, i.texArrayUVZ, 0).rgb;
                     o.color = weight * fixed4(colorRGB, 1);
                 }
                 return o;

@@ -119,6 +119,7 @@ Shader "COLIBRIVR/Rendering/TexturedPerViewMeshesDT"
                     unlitTex_v2g iterVert = i[iter];
                     o.clipXYZW = iterVert.clipXYZW;
                     o.texArrayUVZ = iterVert.texArrayUVZ;
+                    // TODO: Does this work on OpenGL platforms?
                     o.vertexColor = isTriangleRubberSheet ? fixed4(UNITY_SAMPLE_TEX2DARRAY_LOD(_ColorData, iterVert.texArrayUVZ, _MipMapLevel).rgb, 1) : 0;
                     triangleStream.Append(o);
                 }
@@ -132,7 +133,7 @@ Shader "COLIBRIVR/Rendering/TexturedPerViewMeshesDT"
                 if(i.isDisocclusionTriangle > 0)
                     o.color = (_UseDebugColor == 1) ? fixed4(1, 0, 1, 1) : i.vertexColor;
                 else
-                    o.color = fixed4(UNITY_SAMPLE_TEX2DARRAY(_ColorData, i.texArrayUVZ).rgb, 1);
+                    o.color = fixed4(UNITY_SAMPLE_TEX2DARRAY_LOD(_ColorData, i.texArrayUVZ, 0).rgb, 1);
                 return o;
             }
     /// ENDFRAGMENT

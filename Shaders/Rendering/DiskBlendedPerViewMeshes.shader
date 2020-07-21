@@ -96,7 +96,7 @@ Shader "COLIBRIVR/Rendering/DiskBlendedPerViewMeshes"
                 if(_IsColorSourceCamIndices == 1)
                     colorRGB = GetColorForIndex(sourceCamIndex, _SourceCamCount);
                 else
-                    colorRGB = UNITY_SAMPLE_TEX2DARRAY(_ColorData, i.texArrayUVZ).rgb;
+                    colorRGB = UNITY_SAMPLE_TEX2DARRAY_LOD(_ColorData, i.texArrayUVZ, 0).rgb;
                 // Multiply this color by the blending weight.
                 fixed4 meshColor = weight * fixed4(colorRGB, 1);
                 // Set the output color as a blend between this weighted color and the existing output color (stored in a texture).

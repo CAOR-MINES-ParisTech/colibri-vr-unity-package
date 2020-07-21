@@ -214,7 +214,7 @@
             if(isFacingCorrectDir && isWithinFOV && isNotOccluded)
             {
                 float weight = 1.0 / length(sourceCamToPointXYZ);
-                outColor += weight * float4(UNITY_SAMPLE_TEX2DARRAY(_ColorData, sourceTexArrayUVZ).rgb, 1);
+                outColor += weight * float4(UNITY_SAMPLE_TEX2DARRAY_LOD(_ColorData, sourceTexArrayUVZ, 0).rgb, 1);
             }
         }
         return outColor;
