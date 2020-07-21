@@ -114,7 +114,7 @@ namespace COLIBRIVR.Rendering
         /// <summary>
         /// Assigns the blending material to each focal surface.
         /// </summary>
-        private void AssignMaterialToGeometricProxy()
+        private protected virtual void AssignMaterialToGeometricProxy()
         {
             MaterialPropertyBlock properties = new MaterialPropertyBlock();
             for(int sourceCamIndex = 0; sourceCamIndex < PMPerViewMeshesQSTR.perViewMeshTransforms.Length; sourceCamIndex++)

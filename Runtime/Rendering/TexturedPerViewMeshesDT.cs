@@ -111,6 +111,21 @@ namespace COLIBRIVR.Rendering
             blendingMaterial = new Material(GeneralToolkit.shaderRenderingTexturedPerViewMeshesDT);
         }
 
+        /// <inheritdoc/>
+        private protected override void AssignMaterialToGeometricProxy()
+        {
+            MaterialPropertyBlock properties = new MaterialPropertyBlock();
+            for(int sourceCamIndex = 0; sourceCamIndex < PMPerViewMeshesQSTR.perViewMeshTransforms.Length; sourceCamIndex++)
+            {
+                MeshRenderer meshRenderer = PMPerViewMeshesQSTR.perViewMeshTransforms[sourceCamIndex].gameObject.AddComponent<MeshRenderer>();
+                meshRenderer.material = blendingMaterial;
+                properties.SetFloat(_shaderNameSourceCamIndex, sourceCamIndex);
+                properties.SetVector(_shaderNameSourceCamPosXYZ, PMPerViewMeshesQSTR.perViewMeshTransforms[sourceCamIndex].position);
+                meshRenderer.SetPropertyBlock(properties);
+            }
+        }
+
+
 #endregion //INHERITANCE_METHODS
 
 #region METHODS
