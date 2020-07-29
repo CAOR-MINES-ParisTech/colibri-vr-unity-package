@@ -172,7 +172,7 @@ namespace COLIBRIVR
             StringBuilder stringBuilder = new StringBuilder();
             stringBuilder.AppendLine("# Additional setup information:");
             stringBuilder.AppendLine("#   INITIAL_VIEWING_POSITION");
-            string line = initialViewingPos.x + " " + initialViewingPos.y + " " + initialViewingPos.z;
+            string line = GeneralToolkit.ToString(initialViewingPos.x) + " " + GeneralToolkit.ToString(initialViewingPos.y) + " " + GeneralToolkit.ToString(initialViewingPos.z);
             stringBuilder.AppendLine(line);
             // Store the minimum/maximum distance range
             stringBuilder.AppendLine("#   Distance ranges with one line of data per camera:");
@@ -180,7 +180,7 @@ namespace COLIBRIVR
             foreach(CameraModel camera in cameraSetup.cameraModels)
             {
                 Vector2 distanceRange = camera.distanceRange;
-                stringBuilder.AppendLine(camera.cameraReferenceIndex + " " + distanceRange.x + " " + distanceRange.y);
+                stringBuilder.AppendLine(GeneralToolkit.ToString(camera.cameraReferenceIndex) + " " + GeneralToolkit.ToString(distanceRange.x) + " " + GeneralToolkit.ToString(distanceRange.y));
             }
             // Save the file.
             File.WriteAllText(additionalInfoFile, stringBuilder.ToString());
